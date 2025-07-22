@@ -1,4 +1,4 @@
-// \[cite: [^\]]*\] [cite Start]
+// \[cite: [^\]]*\] [cite Start] 
 const main_title = "AWS SysOps Practice Quiz";
  // --- DATA SOURCE ---
 const questions = [
