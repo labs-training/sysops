@@ -2838,5 +2838,265 @@ const questions = [
   ],
   "explanation": "Why C is correct: The performance requirements (180,000 IOPS and 3,500 MB/s throughput) exceed the maximum capabilities of both `gp3` and standard `io2` volumes. The only EBS volume type that can provide this level of performance on a single volume is **`io2` Block Express**. It is designed for the most demanding, I/O-intensive, and latency-sensitive applications, supporting up to 256,000 IOPS and 4,000 MB/s of throughput on Nitro-based instances.",
   "wrongExplanation": "Why the others are wrong: \n**A**: A standard `io2` volume, even on a Nitro instance, has a maximum of 64,000 IOPS. It cannot meet the 180,000 IOPS requirement. \n**B**: While a RAID 0 array of `gp3` volumes can aggregate performance, `gp3` maxes out at 16,000 IOPS per volume. Reaching 180,000 IOPS would be complex, costly, and difficult to manage. `io2 Block Express` provides this performance in a much simpler, single-volume architecture. \n**D**: A single `gp3` volume is capped at 16,000 IOPS and 1,000 MB/s of throughput, which is far below the stated requirements."
+},
+ {
+  "number": 96,
+  "title": "AWS WAF and Edge Security",
+  "scenario": "A popular e-commerce website, served by an Application Load Balancer (ALB), is under attack. The security team observes two distinct patterns: 1) A distributed, low-and-slow brute-force attack against the `/api/login` endpoint, coming from thousands of different IP addresses. 2) A series of requests containing patterns consistent with SQL injection and cross-site scripting (XSS) attacks targeting various search and product pages.",
+  "questionText": "Which two AWS WAF rule configurations should be deployed together in a Web ACL and associated with the ALB to most effectively mitigate both threats? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "A rate-based rule that aggregates requests based on the source IP address and triggers on a high threshold (e.g., 2000 requests in 5 minutes)."
+    },
+    {
+      "letter": "B",
+      "text": "The AWS Managed Rules `Amazon IP reputation list` rule group to block known malicious IPs."
+    },
+    {
+      "letter": "C",
+      "text": "Activate AWS Shield Advanced on the ALB to block the SQL injection attempts."
+    },
+    {
+      "letter": "D",
+      "text": "A rate-based rule configured with a scope-down statement to count only requests where the URI path is exactly `/api/login`."
+    },
+    {
+      "letter": "E",
+      "text": "The AWS Managed Rules `Core rule set (CRS)`."
+    }
+  ],
+  "correctAnswers": [
+    "D",
+    "E"
+  ],
+  "explanation": "Why D and E are correct: \nThis is a multi-faceted attack requiring a layered defense. **D** is correct because a standard rate-based rule would be ineffective against a low-and-slow attack. By adding a **scope-down statement**, the rule only counts requests to the specific `/api/login` endpoint. This allows setting a very low rate limit (e.g., 50 requests per 5 minutes) to block the brute-force attack without affecting other parts of the site. **E** is correct because the **`Core rule set (CRS)`** is specifically designed by AWS to detect and block a wide array of common web application attacks, including the SQL injection and XSS patterns described in the scenario. Combining these two provides targeted protection against the brute-force and broad protection against common exploits.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A generic rate-based rule with a high threshold would miss the low-and-slow attack, as each individual IP stays below the limit. \n**B**: While the IP reputation list is useful, it only blocks IPs already known to AWS as malicious. It would not be effective against a distributed attack coming from a large, previously unknown botnet. \n**C**: AWS Shield Advanced is a managed DDoS protection service for volumetric attacks at Layers 3 and 4. It does not inspect application layer payloads to detect SQL injection; that is the function of AWS WAF."
+},
+ {
+  "number": 97,
+  "title": "Using Amazon Data Lifecycle Manager (DLM)",
+  "scenario": "An administrator needs to automate a backup and disaster recovery strategy for a fleet of production EC2 instances tagged with `AppName:WebApp`. The company policy dictates that daily snapshots must be created at 02:00 UTC. Snapshots in the primary region (`us-east-1`) must be retained for 30 days. For disaster recovery, these daily snapshots must also be copied to a secondary region (`eu-central-1`) where they must be retained for 180 days. This entire process must be automated with minimal operational overhead.",
+  "questionText": "What is the most efficient and native method to implement this backup and DR plan?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Create a DLM policy targeting the `AppName:WebApp` tag to create snapshots daily. Create a second DLM policy that targets snapshots with the same tag and configures a cross-region copy action."
+    },
+    {
+      "letter": "B",
+      "text": "Create a single DLM policy targeting resources with the `AppName:WebApp` tag. Within the policy's schedule, define the creation time, set the primary retention to 30 days, and add a cross-region copy action to `eu-central-1` with a separate retention period of 180 days."
+    },
+    {
+      "letter": "C",
+      "text": "Write an AWS Lambda function, triggered daily by an Amazon EventBridge schedule, that uses the AWS SDK to find the instances, create snapshots, copy them to the DR region, and manage retention by deleting old snapshots."
+    },
+    {
+      "letter": "D",
+      "text": "Use AWS Backup to create a backup plan. Define a backup rule for daily backups with a 30-day retention and a separate copy action to a vault in `eu-central-1` configured with a 180-day retention."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Why B is correct: **Amazon Data Lifecycle Manager (DLM)** is designed for exactly this purpose. The most efficient implementation is a **single DLM policy** that handles the entire lifecycle. DLM allows you to define a schedule that not only creates the snapshot but also includes integrated actions like cross-region copy. Crucially, the cross-region copy action within the policy allows you to specify a completely separate retention period for the copied snapshots, meeting all requirements in one managed resource with minimal complexity.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: It is not possible to have a second DLM policy target snapshots created by the first. All actions (create, copy, retain) are defined within a single policy schedule. This approach is not functionally possible. \n**C**: While technically feasible, this is a significant amount of undifferentiated heavy lifting. It requires writing, testing, and maintaining custom code for a process that DLM handles natively. It is far from the most efficient solution. \n**D**: AWS Backup is another valid service for this, however, the question focuses on the most efficient method to manage the lifecycle of **EBS snapshots** specifically, which is DLM's core function. DLM provides a more direct, EBS-centric approach compared to the broader, multi-service scope of AWS Backup. For this specific EBS-only scenario, a single DLM policy is arguably the most direct and efficient implementation."
+},
+ {
+  "number": 98,
+  "title": "Optimizing AWS Spend and Usage",
+  "scenario": "A media company runs a complex workload on AWS. The workload consists of: 1) A core fleet of EC2 instances and RDS databases that provide a 24/7 baseline service, with predictable, stable usage. 2) A large, stateless fleet of EC2 instances used for video transcoding jobs that run for several hours each night, can be interrupted, and can tolerate a 10-20 minute delay in starting. 3) A development environment with sporadic EC2 usage that must be automatically shut down outside of business hours.",
+  "questionText": "To achieve the maximum cost savings across this entire workload, which two distinct optimization mechanisms should be implemented? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Purchase Reserved Instances for the peak capacity of the video transcoding fleet to ensure capacity is always available."
+    },
+    {
+      "letter": "B",
+      "text": "Use AWS Budgets to send an alert when the monthly cost exceeds the forecast."
+    },
+    {
+      "letter": "C",
+      "text": "Use Spot Instances for the stateless video transcoding jobs."
+    },
+    {
+      "letter": "D",
+      "text": "Use a Compute Savings Plan to cover the stable, predictable usage of the core EC2 and RDS fleet."
+    },
+    {
+      "letter": "E",
+      "text": "Use AWS Instance Scheduler to automatically stop and start the EC2 instances in the development environment."
+    }
+  ],
+  "correctAnswers": [
+    "C",
+    "E"
+  ],
+  "explanation": "Why C and E are correct: \nThis question requires applying the right optimization technique to the right workload. **C** is correct because **Spot Instances** are the ideal choice for workloads that are stateless, fault-tolerant, and not time-critical, such as the video transcoding jobs. They offer the deepest discounts (up to 90%) in exchange for the possibility of interruption, which the scenario states is acceptable. **E** is correct because for non-production environments like development, the easiest and most effective way to save money is to simply turn off resources when they are not in use. The **AWS Instance Scheduler** is a pre-packaged, AWS-provided solution that automates the starting and stopping of EC2 and RDS instances based on a defined schedule, directly addressing the requirement for the development environment.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: Purchasing Reserved Instances for a transient, peak workload is highly inefficient. You would be paying for capacity that sits idle for the majority of the day. \n**B**: AWS Budgets is a cost *monitoring* and *alerting* tool. It helps track spending but does not, by itself, implement any mechanism to *reduce* costs. \n**D**: The prompt states the plan should cover EC2 and RDS. Compute Savings Plans apply to EC2, Fargate, and Lambda, but **not** to RDS. For a commitment covering both EC2 and RDS, separate EC2 Instance Savings Plans and RDS Reserved Instances would be needed. Therefore, this option is technically incorrect as stated."
+},
+ {
+  "number": 99,
+  "title": "AWS IAM Access Analyzer for External Access",
+  "scenario": "A security team at a large corporation is responsible for auditing all S3 buckets to ensure no data is inadvertently exposed to external entities. They have hundreds of AWS accounts under an AWS Organization. The team needs to find all S3 buckets that have policies allowing access to an AWS account outside of their organization, but they want to ignore access from trusted third-party accounts that are defined in an approved list. The solution must be automated and continuous.",
+  "questionText": "What is the most effective and direct way to achieve this continuous auditing goal?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Write a custom AWS Lambda function that uses the S3 API to periodically scan all bucket policies in every account, compares the principal against a list of trusted accounts, and sends a report to the security team."
+    },
+    {
+      "letter": "B",
+      "text": "Enable AWS Config with the `s3-bucket-public-read-prohibited` managed rule across all accounts to detect publicly accessible buckets."
+    },
+    {
+      "letter": "C",
+      "text": "In the organization's management account, create an AWS IAM Access Analyzer with the organization as the zone of trust. Configure archive rules to automatically suppress findings that grant access to the principal of a trusted third-party account."
+    },
+    {
+      "letter": "D",
+      "text": "Deploy an AWS CloudTrail trail in each account to log all S3 API activity. Use Amazon Athena to query the logs for `PutBucketPolicy` events and analyze the policy document for external principals."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: This is the exact use case for which AWS IAM Access Analyzer was designed. By creating an analyzer at the organization level, it continuously monitors supported resources (like S3 buckets) for policies that grant access to principals outside the defined zone of trust (the organization). The key feature here is the use of **archive rules**, which allow you to automatically suppress findings that match specific criteria, such as access granted to a known and trusted third-party account. This provides a clean, automated, and managed solution without writing custom code.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: This is a manual, custom solution for a problem that AWS provides a managed service for. It would require significant development and maintenance effort compared to using Access Analyzer. \n**B**: This AWS Config rule only checks for public access (e.g., for `AllUsers` or `AllAWSAccounts`). It does not detect specific cross-account access to an entity outside the organization, which is the core requirement. \n**D**: CloudTrail is a detective tool that records API calls. While you could analyze policy changes after the fact, it's not a continuous monitoring solution for the *state* of the policy itself. Access Analyzer continuously analyzes the policies as they exist, not just when they change."
+},
+ {
+  "number": 100,
+  "title": "Amazon Route 53 Resolver for Hybrid DNS",
+  "scenario": "A company is building a hybrid cloud environment, connecting their on-premises data center to an AWS VPC via AWS Direct Connect. The on-premises network has its own DNS servers that resolve internal hostnames (e.g., `server.corp.internal`). Applications running in the AWS VPC need to resolve these on-premises hostnames. Conversely, on-premises servers need to resolve hostnames for AWS resources within a private hosted zone in Route 53 (e.g., `db.aws.local`).",
+  "questionText": "Which two components must be configured to enable this bidirectional DNS resolution? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Create a Route 53 Resolver inbound endpoint in the VPC and configure the on-premises DNS servers to forward queries for the `aws.local` domain to the endpoint's IP addresses."
+    },
+    {
+      "letter": "B",
+      "text": "Create a Route 53 private hosted zone for `corp.internal` and create A records for all on-premises servers."
+    },
+    {
+      "letter": "C",
+      "text": "Create a Route 53 Resolver outbound endpoint in the VPC. Create a forwarding rule that associates the `corp.internal` domain with the outbound endpoint and targets the on-premises DNS servers' IP addresses."
+    },
+    {
+      "letter": "D",
+      "text": "Establish a VPC peering connection between the VPC and a dedicated \"DNS\" VPC where the endpoints are located."
+    },
+    {
+      "letter": "E",
+      "text": "Configure the VPC's DHCP options set to use the on-premises DNS servers directly."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "C"
+  ],
+  "explanation": "Why A and C are correct: \nThis is the classic hybrid DNS pattern using Route 53 Resolver. **A** is correct because a **Resolver inbound endpoint** provides IP addresses within your VPC that your on-premises DNS servers can forward requests to. This allows on-premises systems to resolve resources in your AWS private hosted zones (`aws.local`). **C** is correct because a **Resolver outbound endpoint**, combined with a **forwarding rule**, allows your AWS resources to resolve on-premises hostnames. When an EC2 instance in the VPC queries for `server.corp.internal`, the rule forwards this query via the outbound endpoint to your on-premises DNS servers for resolution. Together, these two components create the required bidirectional query path.",
+  "wrongExplanation": "Why the others are wrong: \n**B**: This would involve manually duplicating on-premises DNS records in AWS, which is inefficient, difficult to maintain, and does not solve the requirement of using the authoritative on-premises DNS servers. \n**D**: VPC peering is not required for this solution. The endpoints function within the VPC and communicate with the on-premises network over the existing Direct Connect. \n**E**: While you could point the VPC's DNS to on-premises servers, this would break the ability for instances to resolve public AWS service endpoints or names in private hosted zones without complex conditional forwarding configurations on the on-premises servers. The inbound/outbound endpoint model is the recommended and more robust solution."
+},
+ {
+  "number": 101,
+  "title": "VPC Flow Logs for Security Forensics",
+  "scenario": "Following a security incident, an forensics team needs to analyze network traffic patterns within a production VPC over the last 30 days. Specifically, they need to identify all IP addresses outside of the VPC that attempted to connect to any EC2 instance on TCP port 22 (SSH) and were rejected by a security group. The VPC Flow Logs are being delivered to an Amazon S3 bucket.",
+  "questionText": "What is the most efficient method to query the logs and get this specific information?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Download the compressed VPC Flow Log files from S3 to a local machine, decompress them, and use command-line tools like `grep` to search for entries containing `REJECT` and port 22."
+    },
+    {
+      "letter": "B",
+      "text": "Create an Amazon Athena table based on the VPC Flow Logs in S3. Run a SQL query that filters for `action = 'REJECT'`, `dstport = 22`, and where `srcaddr` is not within the VPC's CIDR range."
+    },
+    {
+      "letter": "C",
+      "text": "Enable GuardDuty and wait for it to generate a finding related to SSH brute-force attacks, then analyze the finding details."
+    },
+    {
+      "letter": "D",
+      "text": "Stream the VPC Flow Logs to Amazon CloudWatch Logs. Use a CloudWatch Logs Insights query with a filter expression to find the rejected SSH traffic."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Why B is correct: **Amazon Athena** is the perfect tool for this use case. It allows you to run complex SQL queries directly on large datasets stored in S3, like VPC Flow Logs. By creating a table that defines the structure of the flow logs, you can write a simple SQL query to perform a powerful, server-side search. The query can efficiently filter billions of log entries for the exact conditions required (`action = 'REJECT'`, `dstport = 22`, and source IP outside the VPC), making it the most efficient method for historical analysis of large volumes of log data.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: This is extremely inefficient and not scalable. Downloading potentially terabytes of log data is slow, and client-side processing with `grep` is much less powerful than a structured SQL query. \n**C**: GuardDuty is a threat detection service, not a historical log query tool. It may not have generated a specific finding for every rejected connection, and it cannot be used to arbitrarily query past network flows. \n**D**: While CloudWatch Logs Insights is powerful for real-time and recent log analysis, the scenario specifies analyzing 30 days of historical data already stored in S3. Setting up a new stream would not help analyze existing logs, and for large historical datasets, Athena is generally more cost-effective and performant."
+},
+{
+  "number": 102,
+  "title": "Elastic Load Balancing Use Cases",
+  "scenario": "A company is designing a highly available service that relies on a fleet of EC2 instances running a custom TCP-based protocol on port 8443. It is critical that the backend instances can identify the original source IP address of the connecting client for logging and security purposes. The service is expected to handle millions of requests per second with ultra-low latency. The solution must also support routing traffic to instances based on their instance ID.",
+  "questionText": "Which two AWS services or features should be combined to meet all of these requirements? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "An Application Load Balancer (ALB) with a TCP listener."
+    },
+    {
+      "letter": "B",
+      "text": "A Network Load Balancer (NLB) with a TCP listener."
+    },
+    {
+      "letter": "C",
+      "text": "Enable Proxy Protocol v2 on the NLB's target group."
+    },
+    {
+      "letter": "D",
+      "text": "Enable stickiness on the ALB's target group."
+    },
+    {
+      "letter": "E",
+      "text": "A Gateway Load Balancer (GWLB) to inspect all incoming traffic."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
+  "explanation": "Why B and C are correct: \n**B** is correct because a **Network Load Balancer (NLB)** operates at Layer 4 (Transport Layer) and is designed for high-performance TCP traffic with ultra-low latency. By default, it preserves the client's source IP address, which is a critical requirement. It also supports routing to specific instance IDs. **C** is correct because while an NLB preserves the source IP when routing to an instance's primary private IP, if you need to route to instances in other VPCs or want to pass along additional connection information (like a VPC endpoint ID), **Proxy Protocol v2** is the feature that must be enabled. It adds a header to the TCP request containing the original source/destination information, ensuring the backend application can always retrieve it.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: An Application Load Balancer (ALB) operates at Layer 7 and does not support custom TCP protocols; it works with HTTP/HTTPS/gRPC. It also terminates the client connection and creates a new one, hiding the original source IP (though it can be passed in an X-Forwarded-For header for HTTP). \n**D**: Stickiness is a feature for session affinity, which was not a stated requirement. \n**E**: A Gateway Load Balancer is a specialized service for deploying and managing third-party virtual network appliances (like firewalls). It is not a general-purpose load balancer for application traffic."
+} ,
+ {
+  "number": 103,
+  "title": "Scaling with Spot Instances",
+  "scenario": "A research institution runs large-scale, fault-tolerant data analysis jobs on AWS. These jobs can be divided into many small, independent tasks and can be safely stopped and restarted. To minimize costs, they want to use Spot Instances exclusively. Their main goal is to acquire a large amount of compute capacity while minimizing the chance of interruptions from Spot Instance reclamations.",
+  "questionText": "Which strategy should they use when requesting Spot Instances to achieve this goal?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Use an EC2 Auto Scaling group configured to request a single, large instance type in a single Availability Zone to simplify management."
+    },
+    {
+      "letter": "B",
+      "text": "Set the maximum Spot price significantly higher than the current Spot price to guarantee that their instances will not be interrupted."
+    },
+    {
+      "letter": "C",
+      "text": "Use an EC2 Fleet or Auto Scaling group with a flexible configuration that specifies a wide variety of instance types, sizes, and families across multiple Availability Zones, and use the `capacity-optimized` allocation strategy."
+    },
+    {
+      "letter": "D",
+      "text": "Use an EC2 Fleet with the `lowest-price` allocation strategy to ensure the absolute minimum cost at all times."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: The key to using Spot successfully is **flexibility**. By specifying a diverse range of instance types (e.g., m5.large, c5.large, r5.large) and sizes across multiple Availability Zones, you give EC2 many different Spot capacity pools to draw from. The **`capacity-optimized`** allocation strategy is designed to automatically launch instances from the Spot capacity pools with the most available capacity, which directly translates to the lowest likelihood of interruption. This combination maximizes both the availability of capacity and the stability of the Spot fleet.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: Relying on a single instance type in a single AZ is the worst strategy for Spot. If that specific Spot pool runs out of capacity, your entire workload will be interrupted. \n**B**: Setting a high maximum price does not prevent interruptions. Spot interruptions are based on capacity demand, not just price. If AWS needs the capacity back, your instance will be reclaimed regardless of your bid price. \n**D**: The `lowest-price` allocation strategy will always choose the cheapest pool, but these pools are often the most popular and therefore have the highest risk of interruption. For workloads that need to run with minimal interruption, `capacity-optimized` is the recommended strategy."
 }
 ]
