@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+_<!DOCTYPE html>
 <html lang="en">
 <head> 
     <meta charset="UTF-8">
@@ -140,11 +140,11 @@
                 answeredCorrectly,
                 totalSeconds
             };
-            setCookie('quizState', state, 7); // Save state for 7 days
+            setCookie(cookie_name, state, 7); // Save state for 7 days
         }
 
         function loadState() {
-            const savedState = getCookie('quizState');
+            const savedState = getCookie(cookie_name);
             if (savedState) {
                 currentQuestionIndex = savedState.currentQuestionIndex || 0;
                 score = savedState.score || 0;
@@ -349,7 +349,7 @@
         }
         
         function resetQuiz() {
-            deleteCookie('quizState'); // Clear the saved state
+            deleteCookie(cookie_name); // Clear the saved state
             
             // Reset state variables to their initial values
             currentQuestionIndex = 0;
