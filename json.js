@@ -2399,5 +2399,156 @@ const questions = [
         ],
         "explanation": "This question highlights a key behavior specific to Windows Server patching within Systems Manager. The critical piece of information lies in how superseded patches interact with ApproveAfterDays.\n • Patch A: Is released on Day 0. Its ApproveAfterDays is 45, meaning it would be approved for installation on Day 45.\n• Patch B: Is released on Day 20 and supersedes Patch A.\n\n• The Problem: Because Patch B supersedes Patch A before Patch A reaches its Day 45 approval date, Patch A effectively becomes irrelevant for installation. Furthermore, Patch B, while now the relevant update, itself has an ApproveAfterDays of 45. This means Patch B won't be automatically approved until Day 65 (Day 20 + 45 days).\n\n• The Outcome: When the patching operation runs on Day 46 (Day 20 + 26), neither Patch A (which is superseded before its approval date) nor Patch B (which is still within its own auto-approval delay) will be automatically installed. This behavior can lead to patches being missed if the auto-approval delay is not carefully managed in environments with frequent superseded releases.\n\nThis scenario emphasizes the importance of understanding how patch supersession and approval delays interact, particularly in Windows Server environments managed through Systems Manager Patch Manager.",
         "wrongExplanation": "Why A is incorrect: Patch A would not be installed because it is superseded by Patch B, which means Patch A is no longer relevant for installation.  The approval window for Patch A does not apply once it is superseded. \nWhy B is incorrect: While Patch B does supersede Patch A, it will not be installed immediately because it has its own ApproveAfterDays setting of 45 days.  Since the patching operation runs 46 days after Patch A's release, Patch B will not yet meet its approval criteria. \nWhy D is incorrect: Both patches will not be installed because Patch A is superseded by Patch B, and Patch B itself has not yet met its approval criteria due to the ApproveAfterDays setting. "
+    },
+  {
+        "number": 82,
+        "title": "AWS Secrets Manager for Database Credentials",
+        "scenario": "",
+        "questionText": "Which of the following statements about AWS Secrets Manager and its use for managing database credentials is true?",
+        "isMultiChoice": false,
+        "options": [
+            {
+                "letter": "A",
+                "text": "AWS Secrets Manager automatically rotates database credentials without any additional configuration."
+            },
+            {
+                "letter": "B",
+                "text": "AWS Secrets Manager encrypts secrets at rest and in transit using AWS KMS."
+            },
+            {
+                "letter": "C",
+                "text": "AWS Secrets Manager requires the use of IAM roles for all access to secrets."
+            },
+            {
+                "letter": "D",
+                "text": "AWS Secrets Manager can only be used with Amazon RDS databases."
+            }
+        ],
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Why B is correct: AWS Secrets Manager encrypts secrets at rest and in transit using AWS Key Management Service (KMS). This ensures that sensitive information, such as database credentials, is protected from unauthorized access. AWS Secrets Manager also provides fine-grained access control through AWS Identity and Access Management (IAM) policies.",
+        "wrongExplanation": "Why the others are wrong: \nA: While AWS Secrets Manager can automatically rotate credentials, this feature requires configuration and is not enabled by default. \nC: IAM roles are not strictly required for all access to secrets, but they are a best practice for controlling access. \nD: AWS Secrets Manager can be used with any database, not just Amazon RDS."
+    },{
+  "number": 83,
+  "title": "AWS Config for Database Security",
+  "scenario": "An organization uses Amazon RDS for its critical databases and AWS Secrets Manager for credential management, with automatic rotation enabled. They need to leverage AWS Config to continuously monitor their environment, ensure security best practices are followed, and detect potential compliance violations related to their database infrastructure.",
+  "questionText": "To ensure compliance and detect misconfigurations related to their RDS databases and the secrets that grant access to them, which two of the following AWS Config implementations represent valid and effective best practices? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Implement a custom AWS Config rule using a Lambda function that cross-references the RDS instance's security group with the IAM roles permitted to access the database secret, ensuring the roles do not have overly permissive inbound rules (e.g., 0.0.0.0/0)."
+    },
+    {
+      "letter": "B",
+      "text": "Deploy the `rds-instance-public-access-check` managed Config rule to continuously monitor and flag any RDS instances that are configured to be publicly accessible."
+    },
+    {
+      "letter": "C",
+      "text": "Configure AWS Config to directly read the secret value from AWS Secrets Manager to verify its password complexity against the company's policy."
+    },
+    {
+      "letter": "D",
+      "text": "Use an AWS Config aggregator to automatically trigger the rotation of credentials in Secrets Manager whenever a non-compliant change is detected on the associated RDS instance."
+    },
+    {
+      "letter": "E",
+      "text": "Create a Config rule that checks the resource-based policy of the secret in Secrets Manager to ensure the `sts:SourceIdentity` condition key is being used to prevent confused deputy vulnerabilities."
     }
+  ],
+  "correctAnswers": [
+    "B",
+    "E"
+  ],
+  "explanation": "Why B and E are correct: \n**B** is correct because using AWS Config managed rules, like `rds-instance-public-access-check`, is a direct and effective best practice for ensuring that sensitive database resources are not unintentionally exposed to the public internet. This is a primary function of AWS Config. \n**E** is correct because AWS Config can evaluate the resource-based policies of other AWS services, including Secrets Manager. Creating a rule to check for the presence of specific condition keys like `sts:SourceIdentity` or `aws:SourceArn` in the secret's policy is an advanced and valid way to enforce security best practices and prevent specific vulnerabilities like the confused deputy problem.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: While you can create custom rules, AWS Config evaluates resource configurations independently. A single Lambda function for a custom rule cannot easily and efficiently cross-reference two different resource types (an IAM Role's permissions and an EC2 Security Group's rules) in real-time as a configuration check. This kind of complex correlation is better suited for other tools like AWS Security Hub or custom event-driven architectures. \n**C**: For security reasons, AWS Config does not have the permissions or capability to read the actual sensitive values of secrets stored in AWS Secrets Manager. It can only inspect the configuration metadata of the secret resource itself (e.g., its resource policy, tags, rotation settings). \n**D**: AWS Config's primary purpose is to record, evaluate, and report on resource configurations. While it can trigger remediation actions (like starting an SSM document), it does not natively integrate to perform specific service actions like rotating a secret in Secrets Manager. Credential rotation is a function managed within Secrets Manager itself."
+},{
+  "number": 84,
+  "title": "AWS Session Manager Advanced Security",
+  "scenario": "A financial services company wants to provide shell access to its EC2 instances located in a private subnet with no internet access. They must enforce end-to-end encryption for all session data and ensure that access is only granted from their corporate network. All actions must be logged in a dedicated S3 bucket.",
+  "questionText": "Which combination of configurations is required to meet these strict security requirements using AWS Session Manager?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Configure a NAT Gateway for the private subnet, create an S3 Gateway Endpoint for logging, and enable KMS encryption in Session Manager preferences."
+    },
+    {
+      "letter": "B",
+      "text": "Create VPC interface endpoints for SSM, SSMMESSAGES, and EC2MESSAGES; configure Session Manager to use a customer-managed KMS key for encryption; and attach an IAM policy to the user's role with a condition key that restricts access based on the source IP address."
+    },
+    {
+      "letter": "C",
+      "text": "Deploy the SSM Agent with a custom configuration to route traffic through an HTTP proxy, attach a security group to the EC2 instances allowing inbound SSH traffic from the Session Manager service, and enable CloudTrail logging."
+    },
+    {
+      "letter": "D",
+      "text": "Enable Session Manager's 'Run As' feature to enforce privilege separation, configure logging to a CloudWatch Logs group, and use an SCP in AWS Organizations to deny any connection not originating from the corporate VPN."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Why B is correct: This option correctly identifies the three key components for a secure, private, and auditable Session Manager setup. 1) **VPC interface endpoints** are necessary for instances in private subnets to communicate with the Systems Manager APIs without needing internet access. 2) Using a **customer-managed KMS key** provides auditable, end-to-end encryption for the session data stream. 3) An **IAM policy with a `aws:SourceIp` condition key** is the standard way to enforce that connections can only be initiated from a specific IP range, such as a corporate network.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A NAT Gateway provides internet access, which is explicitly not allowed. An S3 Gateway Endpoint is for S3, but you need interface endpoints for the SSM services themselves. \n**C**: Session Manager is designed to eliminate the need for open inbound SSH ports; opening port 22 defeats its primary security benefit. \n**D**: While 'Run As' is a useful feature and SCPs can restrict access, this answer omits the critical networking component (VPC endpoints) required for instances in a private subnet to function."
+},{
+  "number": 85,
+  "title": "AWS Systems Manager Custom Inventory and Analytics",
+  "scenario": "An organization needs to track the installation of a specific, non-standard software application across thousands of instances in multiple AWS accounts within an AWS Organization. They need to run complex analytical queries to find all instances that have a version of the software older than '3.1.5' and are also running a specific kernel version.",
+  "questionText": "What is the most effective and scalable method to collect this custom inventory data and perform the required cross-account analytical query?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Create a custom inventory JSON file on each instance and configure the SSM Agent to collect it. Then, use the AWS CLI on a central account to run `ssm:list-inventory-entries` for each instance and manually filter the results."
+    },
+    {
+      "letter": "B",
+      "text": "Write a custom script to gather the data and push it as custom metrics to Amazon CloudWatch. Use CloudWatch Alarms to get notified of instances with old software versions."
+    },
+    {
+      "letter": "C",
+      "text": "Configure a custom inventory type. Then, set up a Resource Data Sync from each account to a central S3 bucket. Finally, use Amazon Athena to query the aggregated inventory data in the central S3 bucket using standard SQL."
+    },
+    {
+      "letter": "D",
+      "text": "Set up a delegated administrator for Systems Manager Inventory in the management account. Use the built-in Inventory console to create a global query that filters for the custom software and kernel version across all member accounts."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: This is the designed architecture for this exact use case. 1) **Custom inventory** allows you to collect any data you can script. 2) **Resource Data Sync** is the feature built specifically to centralize inventory data from multiple accounts into a single S3 bucket for analysis. 3) **Amazon Athena** is the perfect tool for running complex, ad-hoc SQL queries against the data stored in S3, allowing for sophisticated filtering and correlation that the Inventory console cannot perform.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: This approach is not scalable. Running CLI commands for thousands of instances and filtering client-side would be extremely slow and inefficient. \n**B**: CloudWatch is designed for time-series metrics, not for storing and querying detailed configuration states like software versions. While possible, it's the wrong tool for the job and querying would be difficult. \n**D**: While a delegated administrator is useful, the native Inventory console has limited querying capabilities and cannot perform the complex correlation (e.g., software version AND kernel version) across the entire dataset in the way Athena can."
+},{
+  "number": 87,
+  "title": "AWS Control Tower Customization and Enrollment",
+  "scenario": "A company has an established AWS Control Tower landing zone. They now need to enroll an existing, production AWS account that was created before Control Tower was set up. This account has several existing AWS Config rules and a custom IAM role that conflicts with the `AWSControlTowerExecution` role name. The goal is to enroll the account with minimal disruption.",
+  "questionText": "What is the correct high-level procedure to safely enroll this existing account into the Control Tower environment?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Delete all existing AWS Config rules and IAM roles from the account. Then, move the account to the target OU in AWS Organizations, and Control Tower will automatically enroll it and apply the baseline."
+    },
+    {
+      "letter": "B",
+      "text": "From the Control Tower management account, use the 'Enroll account' feature. Control Tower will automatically detect and resolve any conflicting resources like IAM roles and Config rules during the enrollment process."
+    },
+    {
+      "letter": "C",
+      "text": "Manually create the `AWSControlTowerExecution` role in the target account. Identify and remove any AWS Config rules that conflict with the Control Tower conformance packs. Once prepared, initiate the 'Enroll account' process from the Control Tower dashboard."
+    },
+    {
+      "letter": "D",
+      "text": "Extend the Control Tower governance to the account's region using StackSets from the management account. Then, create a new VPC in the account using the Account Factory to signal readiness for enrollment."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: Enrolling an existing account is a deliberate process that requires preparation. 1) The account must have the **`AWSControlTowerExecution` IAM role** so that Control Tower can assume it to manage the account. 2) Before enrollment, you must manually identify and **resolve any conflicting resources**. Control Tower deploys conformance packs with its own AWS Config rules, and if the existing account has rules with the same name, the enrollment will fail. You must address these conflicts beforehand. Only after these prerequisites are met can you safely initiate the enrollment.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: Deleting all IAM roles from a production account is destructive and would cause major outages. This is not a safe or recommended procedure. \n**B**: Control Tower does not automatically resolve conflicts. It will detect them and the enrollment process will fail, requiring manual intervention. It is not an automated conflict-resolution system. \n**D**: This confuses the process. Extending governance happens *as part of* enrollment, not before. Using the Account Factory is for creating *new* accounts, not enrolling existing ones."
+}
 ]
