@@ -2582,5 +2582,261 @@ const questions = [
   ],
   "explanation": "Why C is correct: Enrolling an existing account is a deliberate process that requires preparation. 1) The account must have the **`AWSControlTowerExecution` IAM role** so that Control Tower can assume it to manage the account. 2) Before enrollment, you must manually identify and **resolve any conflicting resources**. Control Tower deploys conformance packs with its own AWS Config rules, and if the existing account has rules with the same name, the enrollment will fail. You must address these conflicts beforehand. Only after these prerequisites are met can you safely initiate the enrollment.",
   "wrongExplanation": "Why the others are wrong: \n**A**: Deleting all IAM roles from a production account is destructive and would cause major outages. This is not a safe or recommended procedure. \n**B**: Control Tower does not automatically resolve conflicts. It will detect them and the enrollment process will fail, requiring manual intervention. It is not an automated conflict-resolution system. \n**D**: This confuses the process. Extending governance happens *as part of* enrollment, not before. Using the Account Factory is for creating *new* accounts, not enrolling existing ones."
+},{
+  "number": 88,
+  "title": "CloudFormation Advanced Terminology",
+  "scenario": "A DevOps team is managing a critical, multi-resource production stack using AWS CloudFormation. Their primary concerns are preventing accidental updates to their RDS database instance and ensuring that any proposed changes to the stack can be reviewed for potential impact before being applied. They need to implement controls that are native to the CloudFormation service.",
+  "questionText": "Which two CloudFormation features or concepts are essential for preventing unintended resource modifications and safely managing updates to a critical production stack? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "A Stack Policy with an \"Allow\" effect for all actions on all resources."
+    },
+    {
+      "letter": "B",
+      "text": "A Change Set, generated before updating the stack."
+    },
+    {
+      "letter": "C",
+      "text": "A Stack Policy with a \"Deny\" effect for \"Update:\" actions on the logical ID of the production database."
+    },
+    {
+      "letter": "D",
+      "text": "A DeletionPolicy of \"Snapshot\" on the database resource."
+    },
+    {
+      "letter": "E",
+      "text": "Drift Detection scheduled to run daily on the stack."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
+  "explanation": "Why B and C are correct: \n**B** is correct because a **Change Set** is the CloudFormation feature designed specifically for previewing changes. It provides a summary of the proposed modifications (creations, updates, deletions) to a stack's resources, allowing the team to review the impact before executing the update, which is a critical safety practice.\n**C** is correct because a **Stack Policy** is a JSON document that controls which update actions can be performed on which resources within a stack. Applying a policy with a \"Deny\" effect on update actions for the logical ID of the database directly prevents any CloudFormation update operation from modifying that specific resource, thus protecting it from accidental changes.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A Stack Policy that allows all actions provides no protection whatsoever; the default behavior is to allow all updates, so this policy would be redundant and ineffective. \n**D**: A DeletionPolicy of \"Snapshot\" or \"Retain\" only applies when the entire stack is deleted or when the resource itself is removed from the template. It does not prevent in-place updates or modifications to the resource while it remains part of the stack. \n**E**: Drift Detection is a detective control, not a preventative one. It identifies when a resource's actual configuration has deviated from its expected configuration in the template (e.g., due to manual changes). It reports on drift but does not prevent CloudFormation from applying intended (or unintended) updates."
+},
+ {
+  "number": 89,
+  "title": "Designing CloudFormation Templates for Reusability",
+  "scenario": "An organization is standardizing its AWS infrastructure. They have created a core networking CloudFormation template that deploys a VPC, subnets, and NAT Gateways. They need to enable multiple application teams to deploy their own stacks (e.g., for EC2 instances and load balancers) into this shared network infrastructure. The design must be modular, prevent application teams from modifying the core network stack, and allow them to dynamically reference networking resources.",
+  "questionText": "Which two CloudFormation features or design patterns must be implemented to create this decoupled and reusable infrastructure? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "The core networking stack must declare its resource IDs, such as the VPC ID and Subnet IDs, in its \"Outputs\" section using the \"Export\" property."
+    },
+    {
+      "letter": "B",
+      "text": "The application stacks should use the \"Fn::ImportValue\" intrinsic function to reference the exported outputs from the core networking stack."
+    },
+    {
+      "letter": "C",
+      "text": "The core networking template should be converted into a CloudFormation Module that is imported by each application stack."
+    },
+    {
+      "letter": "D",
+      "text": "Deploy the application resources within the core networking stack using Nested Stacks."
+    },
+    {
+      "letter": "E",
+      "text": "The application stacks should use parameters with hardcoded ARN values of the network resources."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "B"
+  ],
+  "explanation": "Why A and B are correct: \n**A** is correct because using the **\"Export\"** property in the `Outputs` section of a CloudFormation stack makes its output values (like a VPC ID or subnet ARN) discoverable and usable by other stacks in the same AWS account and region. This is the fundamental first step in creating cross-stack references.\n**B** is correct because the **\"Fn::ImportValue\"** function is the corresponding mechanism used in a consumer stack to import a value that another stack has exported. This creates a loosely coupled dependency, allowing the application stacks to dynamically use the network resources without being part of the same stack, fulfilling the modularity requirement.",
+  "wrongExplanation": "Why the others are wrong: \n**C**: CloudFormation Modules are for reusing components *within* a single stack template, not for sharing resources between independent, running stacks. They are a way to organize a template, not to create cross-stack dependencies. \n**D**: Using Nested Stacks would create a tightly coupled system where the application resources are part of the network stack's lifecycle. This monolithic structure is the opposite of the decoupled design required and would prevent application teams from managing their stacks independently. \n**E**: Hardcoding resource values is an anti-pattern that completely removes the dynamic and reusable nature of the infrastructure. It would require manual updates to every application template if the network infrastructure ever changed."
+},
+{
+  "number": 90,
+  "title": "CloudFormation Stack Update Mechanism and Drift Detection",
+  "scenario": "A development team frequently deploys complex application stacks using AWS CloudFormation. Their template includes an Amazon S3 bucket with a specific lifecycle policy and an AWS Lambda function with a custom timeout. Recently, a team member manually changed the S3 bucket's lifecycle policy directly via the S3 console and also modified the Lambda function's timeout using the AWS CLI, aiming for quick fixes. The team then attempts to deploy a new version of their CloudFormation template that reverts these manual changes and also introduces a new tag to the Lambda function. After the deployment, they run a drift detection on the stack.",
+  "questionText": "Given this scenario, what are two accurate outcomes or behaviors you can expect regarding the CloudFormation stack, its resources, and drift detection?",
+  "isMultiChoice": true,
+  "options": [
+    { "letter": "A", "text": "The CloudFormation update will successfully revert both the S3 bucket lifecycle policy and the Lambda function's timeout to the template's defined values, and drift detection will report no discrepancies." },
+    { "letter": "B", "text": "The CloudFormation update will revert the S3 bucket lifecycle policy, but the Lambda function's timeout might retain its manual change if not explicitly targeted by the update, and drift detection will report only the Lambda function's tag as drifted." },
+    { "letter": "C", "text": "The CloudFormation update will successfully revert the S3 bucket lifecycle policy and apply the new tag to the Lambda function. Drift detection will identify the manual change to the Lambda function's timeout." },
+    { "letter": "D", "text": "The CloudFormation update will fail because manual changes to resources always cause drift and prevent subsequent template deployments from succeeding without manual remediation first." },
+    { "letter": "E", "text": "CloudFormation will update the Lambda function to include the new tag. Drift detection will show the S3 bucket's lifecycle policy as drifted, and the Lambda function's timeout will also be identified as drifted if its template property was explicitly modified in the new deployment." }
+  ],
+  "correctAnswers": ["C", "E"],
+  "explanation": "Why C and E are correct:\n\n1.  **CloudFormation's Idempotency on Updates:** CloudFormation aims for idempotency during updates. When a new template is deployed, CloudFormation compares the desired state (from the template) with the current state of the resources. For properties that are *explicitly defined* in the new template and differ from the current state, CloudFormation will attempt to bring the resource back to the template-defined state. In this scenario, the S3 bucket's lifecycle policy is defined in the template, and the new deployment's template effectively reverts the manual change to this policy. Similarly, if the Lambda function's timeout is specified in the *new* template, it will be reset. The addition of a new tag to the Lambda function will also be applied [4-6].\n2.  **Drift Detection:** AWS CloudFormation's drift detection feature compares the current configuration of stack resources with their expected configuration as defined in the CloudFormation template [7]. Any manual changes made outside of CloudFormation (e.g., via the console or CLI) will be detected as 'drift'.\n3.  **Specific Resource Behaviors:**\n    *   **S3 Bucket Lifecycle Policy:** Lifecycle policies are typically managed through `AWS::S3::Bucket` properties in CloudFormation [8]. If the template specifies a lifecycle configuration, CloudFormation will reconcile it to match the template, overwriting any manual changes. Thus, drift detection would likely show this as 'In Sync' after the update if the template defines the desired state.\n    *   **Lambda Function Timeout:** If the new CloudFormation template *explicitly sets* the timeout property for the Lambda function, then CloudFormation will attempt to update the function to match this value, effectively reverting the manual change. Drift detection would then show 'In Sync' for that property. However, if the new template *does not* specify the timeout (e.g., it was removed or implicitly left at a default in the template, while a manual change was made), CloudFormation might not revert it. The question implies the new template 'reverts' these changes, meaning it defines the properties. Therefore, the update will likely revert it.\n    *   **Drift Detection Granularity:** Drift detection reports on individual resource properties that are out of sync. Even if the update successfully brings resources back in sync, a drift detection *after* the manual changes but *before* the update would show drift. The question asks about drift detection *after* the deployment. If the template definitions are applied, then for those specific properties, the resources should be in sync. However, the question states a 'new tag' is introduced in the new template. If this new tag is part of the desired state in the template, then the resource will be updated to include it. The core insight is that drift detection identifies differences between the *current live state* and the *template's defined state* [7].\n\n    Therefore, after the update, the S3 policy and the Lambda timeout should be in sync if the new template specifies them. The Lambda function will also have the new tag. Drift detection would report the manual changes *if they weren't explicitly reconciled by the update*, or if the question implies detection *before* the update. Given the phrasing 'After the deployment, they run a drift detection on the stack,' it's about detecting remaining discrepancies or validating the update.\n\n    Let's re-evaluate the nuance of 'revert these manual changes'. If the new template *redefines* the S3 bucket's lifecycle and the Lambda function's timeout, the update operation itself will bring those resources into compliance with the template. Thus, a subsequent drift detection would show 'In Sync' for those properties. However, the scenario describes 'manual changes' and 'introduces a new tag'. The manual changes create drift. When the new template is applied, it 'reverts' these changes by applying the template's configuration. Drift detection will confirm the state relative to the *template*. So, C is correct because the update *will* revert the S3 policy and apply the tag, and if the Lambda timeout *was* changed manually, and the template specified its intended value, then the drift for that specific property *would have been present before the update* and corrected by the update. E is correct because if the template *didn't* explicitly revert the timeout, or if the initial deployment was implicitly relying on a default that was then changed manually, it could still be drifted. The most robust interpretation of 'reverts these manual changes' is that the template now contains the desired state. Hence, the drift would be identified for properties that were manually changed and explicitly managed by the template. So, both C (implying the update fixes the drift) and E (explicitly calling out the drift detection identifying both types of manual changes) offer valid insights depending on the precise timing and template definition nuances.",
+  "wrongExplanation": "Why the others are wrong: \nA: Incorrect. While the CloudFormation update *will* attempt to revert these changes if the template explicitly defines them, drift detection would still have captured these discrepancies *prior* to the update. After a successful update that reconciles these properties, drift detection for *those specific properties* would ideally show 'IN_SYNC'. The statement implies drift detection *after* the update showing no discrepancies, which would be true if the update fixed everything, but it doesn't capture the essence of what drift detection *identifies* (i.e., the original manual changes). \nB: Incorrect. CloudFormation updates will apply defined properties. If the Lambda function's timeout is defined in the new template, it will be reverted. Drift detection reports *all* discrepancies between the live resource and the template, not just one type of change. The 'only the Lambda function's tag as drifted' is too narrow, especially since the tag is *newly applied* by the update, so it would not be 'drifted' but rather 'in sync' with the new template. \nD: Incorrect. Manual changes (drift) do not inherently prevent CloudFormation updates from succeeding. CloudFormation attempts to reconcile the state. If the manual change conflicts with the template, CloudFormation will generally try to enforce the template's desired state. The update might fail due to specific dependency issues or invalid configurations, but not simply because drift exists. \n"
+} ,
+ {
+  "number": 91,
+  "title": "CloudFormation WaitCondition and cfn-signal",
+  "scenario": "A CloudFormation template is being used to deploy an EC2 instance into a private subnet with no direct internet access. As part of its UserData script, the instance performs a lengthy software configuration that can take up to 20 minutes. The CloudFormation stack deployment must pause and wait for a success signal from the instance upon completion of this script. The deployment must fail if no signal is received within 30 minutes.",
+  "questionText": "For the `cfn-signal` script on the EC2 instance to successfully communicate with the `AWS::CloudFormation::WaitCondition` resource, which two configurations are absolutely essential in this scenario? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "The EC2 instance's IAM instance profile must include a policy granting the \"cloudformation:SignalResource\" permission."
+    },
+    {
+      "letter": "B",
+      "text": "The instance's security group must allow outbound HTTPS traffic on port 443 to the public internet."
+    },
+    {
+      "letter": "C",
+      "text": "The `Timeout` property of the `AWS::CloudFormation::WaitCondition` resource must be referenced in the EC2 UserData script."
+    },
+    {
+      "letter": "D",
+      "text": "A VPC endpoint for the CloudFormation service must be created and associated with the private subnet's route table."
+    },
+    {
+      "letter": "E",
+      "text": "A `DependsOn` attribute must be added to the EC2 resource, pointing to the `AWS::CloudFormation::WaitCondition`."
+    }
+  ],
+  "correctAnswers": [
+    "A",
+    "D"
+  ],
+  "explanation": "Why A and D are correct: \n**A** is correct because the **`cfn-signal`** helper script makes an API call to the AWS CloudFormation service. To be authorized to make this call, the EC2 instance must have an IAM role with an attached policy that explicitly grants the `cloudformation:SignalResource` permission for the stack resource.\n**D** is correct because the instance is in a **private subnet** with no internet access. For the instance to reach the regional CloudFormation API endpoint, it needs a network path. A **VPC endpoint** for CloudFormation provides this private, secure connectivity from within the VPC without requiring a NAT Gateway or internet access.",
+  "wrongExplanation": "Why the others are wrong: \n**B**: The scenario explicitly states the instance has no direct internet access, so configuring a security group for public internet access is not the correct solution. The solution is a VPC endpoint. \n**C**: The `Timeout` is a property configured on the `WaitCondition` resource itself within the CloudFormation template. It dictates how long the CloudFormation service will wait. The instance script does not need to know this value; it only needs to send a signal. \n**E**: The dependency is the other way around. The `WaitCondition` (or any resource that depends on the instance being ready) must have a `DependsOn` attribute pointing to the `AWS::CloudFormation::WaitConditionHandle`, not the EC2 instance itself. The instance doesn't depend on the wait condition."
+},
+ {
+  "number": 92,
+  "title": "Systems Manager Differentiated Capabilities",
+  "scenario": "An operations team manages a large fleet of EC2 instances for a web application. They need to establish a comprehensive, automated maintenance strategy. The strategy requires that: 1) specific categories of operating system patches (e.g., 'Critical' security updates) are approved and applied on a recurring schedule, and 2) a new version of a custom, in-house monitoring agent must be packaged and deployed reliably across the fleet, replacing the older version.",
+  "questionText": "To implement this strategy, which two AWS Systems Manager capabilities are the most appropriate and specialized tools for defining the patching rules and managing the lifecycle of the custom software package, respectively? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "State Manager, to create an association that runs a patching script on a schedule."
+    },
+    {
+      "letter": "B",
+      "text": "Distributor, to create and version the software package for the monitoring agent."
+    },
+    {
+      "letter": "C",
+      "text": "Run Command, to execute the agent installation command ad-hoc on all instances."
+    },
+    {
+      "letter": "D",
+      "text": "Patch Manager, to define patch baselines that specify rules for auto-approving patches."
+    },
+    {
+      "letter": "E",
+      "text": "Automation, to create a custom runbook that downloads and installs both patches and the agent."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Why B and D are correct:\n**B** is correct because **Distributor** is the Systems Manager capability designed specifically for securely storing and managing versions of software packages. It allows you to create a centralized repository for your custom agent, control its versions, and deploy it consistently across your fleet using other SSM features like Run Command or State Manager.\n**D** is correct because **Patch Manager** is the specialized capability for automating the process of patching managed nodes for both security-related and other types of updates. It allows you to define \"patch baselines,\" which are sets of rules for auto-approving patches based on classification and severity, and to scan for and install missing patches.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: While State Manager can enforce a state, it is a generic tool. Patch Manager is the specific service designed with advanced features for defining patch rules (like approval delays), making it the more appropriate choice for the patching requirement. \n**C**: Run Command is for executing one-time, ad-hoc commands. It is not suitable for a recurring, managed process like patching or versioned software deployment. \n**E**: Automation is a powerful orchestration tool for creating complex workflows, but for the specific tasks of defining patch rules and packaging software, Patch Manager and Distributor are the more specialized, purpose-built services. An Automation document might call on these services, but they are the primary capabilities for the tasks themselves."
+},
+ {
+  "number": 93,
+  "title": "Systems Manager Automation Documents",
+  "scenario": "An SRE needs to author a sophisticated SSM Automation document to perform a safe, rolling restart of EC2 instances within an Auto Scaling group (ASG). The runbook must orchestrate the entire process without manual intervention: detach an instance from the ASG, wait for connection draining, issue a restart command, verify the instance is healthy post-reboot, and then re-attach it to the ASG before proceeding to the next instance.",
+  "questionText": "When authoring the SSM Automation document in YAML to perform this safe, rolling restart, which two actions or structural constructs are essential for orchestrating the interactions with the Auto Scaling group and controlling the workflow logic? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "The \"aws:runCommand\" action to execute a shell script on the instance that calls the AWS CLI to detach itself from the ASG."
+    },
+    {
+      "letter": "B",
+      "text": "The \"aws:executeAwsApi\" action to make direct, authenticated API calls to the Auto Scaling service for actions like \"DetachInstances\" and \"AttachInstances\"."
+    },
+    {
+      "letter": "C",
+      "text": "A native \"for-loop\" construct within the document's YAML syntax to iterate through the list of instance IDs provided as a parameter."
+    },
+    {
+      "letter": "D",
+      "text": "The \"aws:branch\" action to conditionally execute different steps based on the output of a previous step, such as a health check."
+    },
+    {
+      "letter": "E",
+      "text": "The \"aws:sleep\" action to pause the automation after detaching the instance, allowing time for connection draining to complete."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Why B and D are correct: \n**B** is correct because the **`aws:executeAwsApi`** action is the standard, most robust way for an Automation document to interact with the API of another AWS service. It allows the runbook to directly and idempotently call actions like `autoscaling:DetachInstances`, which is a core part of the required orchestration.\n**D** is correct because a complex workflow requires conditional logic. The **`aws:branch`** action is the primary construct for this, allowing the automation to evaluate the output of a previous step (e.g., the success or failure of a health check) and dynamically decide the next step, such as proceeding to re-attach the instance or stopping the entire process.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: This is an anti-pattern. Orchestration logic should be managed by the Automation service itself, not delegated to a script running on the instance. Using `aws:executeAwsApi` is more secure, reliable, and observable. \n**C**: SSM Automation documents do not have a native `for-loop` construct in their syntax. Iteration is typically handled by running the automation with multiple targets or by implementing more complex recursive patterns with branching. \n**E**: While pausing is necessary for connection draining, using the `aws:sleep` action is a brittle way to handle it, as the draining time can vary. A better pattern (often used with `aws:branch` and `aws:executeAwsApi`) is to repeatedly call the `autoscaling:DescribeAutoScalingInstances` API until the instance's lifecycle state confirms that draining is complete."
+},
+ {
+  "number": 94,
+  "title": "AWS Transit Gateway Advanced Routing",
+  "scenario": "A large enterprise uses a central AWS Transit Gateway (TGW) to connect dozens of VPCs across multiple AWS accounts. They need to enforce a strict network segmentation policy: \"Development\" VPCs (tagged `Stage=Dev`) can communicate with a shared \"Tools\" VPC, but must be isolated from each other. \"Production\" VPCs (tagged `Stage=Prod`) must be isolated from all Development VPCs but can communicate with the Tools VPC.",
+  "questionText": "Which two AWS Transit Gateway features must be combined to implement this granular routing and isolation policy effectively? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Apply Network ACLs to the Transit Gateway attachments in each VPC to filter traffic based on the source VPC's CIDR block."
+    },
+    {
+      "letter": "B",
+      "text": "Create separate TGW route tables for the development, production, and tools environments."
+    },
+    {
+      "letter": "C",
+      "text": "Use a single TGW route table and add blackhole routes to prevent traffic between all Development VPCs."
+    },
+    {
+      "letter": "D",
+      "text": "Associate each VPC's TGW attachment with the corresponding environment-specific TGW route table (e.g., Dev VPCs to the Dev route table)."
+    },
+    {
+      "letter": "E",
+      "text": "Use AWS PrivateLink to create endpoint services in the Tools VPC and endpoints in each Development VPC."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Why B and D are correct: \nThis scenario describes a classic hub-and-spoke model with segmentation, which is a primary use case for Transit Gateway. **B** is correct because the core mechanism for routing isolation within a TGW is the use of **multiple TGW route tables**. A separate route table for each environment (Dev, Prod) allows you to define a unique routing domain. **D** is correct because after creating the separate route tables, you must **associate** each VPC's attachment to the appropriate route table. This action effectively places the VPC into its designated routing domain. By then controlling how routes are propagated between these tables, you can precisely enforce the required communication paths (e.g., Dev can see routes to Tools, but not to other Dev VPCs).",
+  "wrongExplanation": "Why the others are wrong: \n**A**: Network ACLs are resources within a VPC that operate at the subnet level. They cannot be applied to Transit Gateway attachments themselves. \n**C**: While using blackhole routes in a single route table can create isolation, it's extremely difficult to manage at scale and is considered an anti-pattern. Separate route tables are the clean, scalable, and intended solution. \n**E**: AWS PrivateLink is used for exposing a specific service in a VPC to other VPCs privately, not for enabling full, routed network connectivity between them. It is not the correct tool for general network segmentation with TGW."
+},
+ {
+  "number": 95,
+  "title": "Sizing Amazon EBS Volumes for Performance",
+  "scenario": "A financial services company is migrating a tier-1 OLTP database to an EC2 Nitro-based instance. The workload has a demanding performance requirement of a sustained 180,000 IOPS and 3,500 MB/s of throughput during peak business hours. The solution must be a single, logical volume, and cost-effectiveness is a key consideration.",
+  "questionText": "Which Amazon EBS configuration is the most appropriate and cost-effective solution to meet these performance requirements?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "A Provisioned IOPS SSD (`io2`) volume provisioned with 180,000 IOPS."
+    },
+    {
+      "letter": "B",
+      "text": "A striped RAID 0 array consisting of twelve General Purpose SSD (`gp3`) volumes."
+    },
+    {
+      "letter": "C",
+      "text": "A Provisioned IOPS SSD (`io2`) Block Express volume."
+    },
+    {
+      "letter": "D",
+      "text": "A General Purpose SSD (`gp3`) volume with 16,000 provisioned IOPS and 1,000 MB/s of throughput."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: The performance requirements (180,000 IOPS and 3,500 MB/s throughput) exceed the maximum capabilities of both `gp3` and standard `io2` volumes. The only EBS volume type that can provide this level of performance on a single volume is **`io2` Block Express**. It is designed for the most demanding, I/O-intensive, and latency-sensitive applications, supporting up to 256,000 IOPS and 4,000 MB/s of throughput on Nitro-based instances.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A standard `io2` volume, even on a Nitro instance, has a maximum of 64,000 IOPS. It cannot meet the 180,000 IOPS requirement. \n**B**: While a RAID 0 array of `gp3` volumes can aggregate performance, `gp3` maxes out at 16,000 IOPS per volume. Reaching 180,000 IOPS would be complex, costly, and difficult to manage. `io2 Block Express` provides this performance in a much simpler, single-volume architecture. \n**D**: A single `gp3` volume is capped at 16,000 IOPS and 1,000 MB/s of throughput, which is far below the stated requirements."
 }
 ]
