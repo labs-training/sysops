@@ -958,5 +958,101 @@ const questions = [
   ],
   "explanation": "Why B and D are correct: \n**B** is correct because **Service Control Policies (SCPs)** are the appropriate mechanism for setting preventative guardrails across accounts in an AWS Organization. An SCP can be crafted with a `Deny` statement using a condition key (`ec2:InstanceType`) to block the launch of specific instance types or families. This policy, applied at the Organizational Unit (OU) level, cannot be overridden by IAM admins in the member accounts, effectively enforcing the control. **D** is correct because **Compute Savings Plans** are a flexible pricing model that provides significant discounts in exchange for a commitment to a consistent amount of compute usage (measured in $/hour). When purchased in the management account, the discount benefits are automatically shared and applied across all linked accounts in the organization, making it the ideal way to get discounts on the company's aggregate baseline usage.",
   "wrongExplanation": "Why the others are wrong: \n**A**: Managing individual IAM policies for hundreds of developers is not scalable and is prone to error. An SCP provides a centralized, enforceable guardrail. \n**C**: AWS Budgets are a detective control, not preventative. They alert you or take action *after* a cost has been incurred, they don't prevent the expensive resource from being launched in the first place. \n**E**: Purchasing Reserved Instances in each account is inefficient. Savings Plans purchased at the management account level provide more flexibility (applying to any instance family/region) and are shared automatically, simplifying management."
-}
+},
+ {
+  "number": 111,
+  "title": "AWS CloudFront Advanced Caching",
+  "scenario": "A global media company uses Amazon CloudFront to distribute large video files stored in an S3 bucket in `us-east-1`. They have a global audience, and they observe that when a new video is released, many different CloudFront edge locations simultaneously request the same file from the S3 origin, causing a high request load on S3. They want to optimize this by introducing a caching layer between the edge locations and the S3 origin to reduce origin fetch requests.",
+  "questionText": "Which CloudFront feature should be implemented to achieve this goal?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Increase the TTL (Time To Live) in the CloudFront cache behavior settings to a very high value."
+    },
+    {
+      "letter": "B",
+      "text": "Enable CloudFront Origin Shield by selecting a specific AWS region to act as a centralized caching layer."
+    },
+    {
+      "letter": "C",
+      "text": "Create a second CloudFront distribution and chain it to the first distribution."
+    },
+    {
+      "letter": "D",
+      "text": "Configure a Lambda@Edge function on the `origin-request` event to cache objects in an ElastiCache cluster."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Why B is correct: **CloudFront Origin Shield** is a feature designed specifically for this use case. It acts as an additional layer of caching within the CloudFront network, positioned in front of your origin. When you enable Origin Shield, you choose an AWS Region to serve as this central cache. All requests from all other CloudFront edge locations that result in a cache miss will be routed to the Origin Shield region first. If Origin Shield has the object cached, it serves it directly to the edge location. Only if Origin Shield also has a cache miss will a single request be sent to the actual origin (the S3 bucket). This dramatically reduces the number of requests hitting your origin, lowering load and egress costs.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: Increasing the TTL will keep objects in the edge caches longer, but it will not solve the initial \"thundering herd\" problem where many edge locations request the object from the origin for the very first time. \n**C**: Chaining distributions is not a standard or supported pattern and would be overly complex and inefficient. \n**D**: This is an extremely complex and expensive way to build a caching layer that CloudFront provides as a simple, built-in feature with Origin Shield."
+},
+ {
+  "number": 112,
+  "title": "Amazon EventBridge Advanced Routing",
+  "scenario": "An e-commerce platform generates events from two different microservices: an 'orders' service and a 'payments' service. Both services publish their events to a central Amazon EventBridge event bus. The platform has two requirements: 1) All events from the 'orders' service that have a `status` field of `\"shipped\"` must be sent to an SQS queue for the shipping department. 2) All events from the 'payments' service that have a `result` field of `\"failed\"` must trigger an AWS Lambda function to alert the finance team.",
+  "questionText": "How should EventBridge be configured to correctly route these events? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Create a single EventBridge rule with two targets: the SQS queue and the Lambda function. Use an Input Transformer to filter the events before sending them to the targets."
+    },
+    {
+      "letter": "B",
+      "text": "Create one EventBridge rule with an event pattern that filters for `source: [\"orders.service\"]` and `detail.status: [\"shipped\"]`. Configure this rule's target to be the SQS queue."
+    },
+    {
+      "letter": "C",
+      "text": "Configure the 'orders' and 'payments' microservices to send events directly to the SQS queue and Lambda function, respectively."
+    },
+    {
+      "letter": "D",
+      "text": "Create a second EventBridge rule with an event pattern that filters for `source: [\"payments.service\"]` and `detail.result: [\"failed\"]`. Configure this rule's target to be the Lambda function."
+    },
+    {
+      "letter": "E",
+      "text": "Create a single EventBridge rule that matches all events from both sources and sends them to a Kinesis Data Stream for later processing and filtering."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "D"
+  ],
+  "explanation": "Why B and D are correct: \nThis solution requires content-based filtering and routing, which is the core strength of EventBridge. The correct approach is to create separate rules for each distinct routing requirement. **B** is correct because it defines a rule with a precise **event pattern**. This pattern matches events only if they originate from the `orders.service` AND contain a `status` of `shipped` in their detail section, and it correctly routes them to the SQS queue target. **D** is correct because it similarly defines a second, independent rule with its own event pattern to match only the failed payment events and route them to the appropriate Lambda function target. This decoupled, rule-based approach is the intended design pattern for EventBridge.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A single rule cannot have conditional targets. A rule's event pattern is evaluated once, and if it matches, the event is sent to *all* of its targets. An Input Transformer can change the shape of an event, but it cannot be used for conditional routing logic. \n**C**: This bypasses the event bus entirely, creating a tightly coupled system and losing all the benefits of event-driven architecture like decoupling, observability, and routing flexibility. \n**E**: This simply forwards all events to another service for filtering, which is inefficient. The filtering should be done within EventBridge itself using rules."
+},
+ {
+  "number": 113,
+  "title": "Creating Backup and Data Recovery Plans",
+  "scenario": "A company is using AWS Backup to manage backups for its Amazon RDS databases and Amazon EBS volumes in the `us-west-2` region. They have a disaster recovery (DR) requirement that all backups must be copied to a secondary region (`ap-southeast-1`) and retained there for one year. The original backups in `us-west-2` only need to be retained for 30 days. The process must be fully automated.",
+  "questionText": "What is the most effective way to configure AWS Backup to meet these requirements?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Create a backup plan with two separate backup rules: one for a 30-day local backup and another for a 1-year cross-region copy."
+    },
+    {
+      "letter": "B",
+      "text": "Create a backup plan with a single backup rule. In the rule, set the lifecycle retention to 30 days and add a 'Copy to destination' action, specifying the destination region and a separate 1-year retention period for the copy."
+    },
+    {
+      "letter": "C",
+      "text": "Create a backup plan for the local backups. Configure an Amazon EventBridge rule to trigger a Lambda function on backup job completion, which then initiates a copy job to the DR region with the correct retention."
+    },
+    {
+      "letter": "D",
+      "text": "Create two separate backup vaults, one in each region. Configure the primary vault to automatically replicate all its recovery points to the secondary vault and manually set the retention on the replicated backups."
+    }
+  ],
+  "correctAnswers": [
+    "B"
+  ],
+  "explanation": "Why B is correct: **AWS Backup** provides a comprehensive and integrated way to manage backup lifecycles, including cross-region copies for disaster recovery. The most efficient and intended method is to use a **single backup rule** within a backup plan. This rule allows you to define the lifecycle for the primary backup (30-day retention) and, within the same rule, add a **copy action**. This copy action lets you specify a destination region and vault, and crucially, allows you to configure a completely independent lifecycle for the copied recovery points (1-year retention). This centralizes the entire DR strategy into one easy-to-manage rule.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A single backup plan can contain multiple rules, but the cross-region copy is an action *within* a rule, not a separate rule itself. This structure is incorrect. \n**C**: This is an overly complex, custom solution that re-implements functionality that AWS Backup provides natively. It introduces unnecessary operational overhead. \n**D**: While you can create vaults in different regions, the replication and lifecycle management is configured within the backup plan's rules, not as a property of the vault itself. The plan is the orchestrator."
+},
+ 
 ]
