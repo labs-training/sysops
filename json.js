@@ -2521,7 +2521,39 @@ const questions = [
   ],
   "explanation": "Why C is correct: This is the designed architecture for this exact use case. 1) **Custom inventory** allows you to collect any data you can script. 2) **Resource Data Sync** is the feature built specifically to centralize inventory data from multiple accounts into a single S3 bucket for analysis. 3) **Amazon Athena** is the perfect tool for running complex, ad-hoc SQL queries against the data stored in S3, allowing for sophisticated filtering and correlation that the Inventory console cannot perform.",
   "wrongExplanation": "Why the others are wrong: \n**A**: This approach is not scalable. Running CLI commands for thousands of instances and filtering client-side would be extremely slow and inefficient. \n**B**: CloudWatch is designed for time-series metrics, not for storing and querying detailed configuration states like software versions. While possible, it's the wrong tool for the job and querying would be difficult. \n**D**: While a delegated administrator is useful, the native Inventory console has limited querying capabilities and cannot perform the complex correlation (e.g., software version AND kernel version) across the entire dataset in the way Athena can."
-},{
+},
+ {
+  "number": 86,
+  "title": "Enforcing Cost Allocation Tagging Strategy",
+  "scenario": "A company uses AWS Organizations and wants to enforce a strict tagging policy. They require that all new Amazon S3 buckets and EC2 instances must have a `project-id` tag, and the value must conform to a specific format (`proj-` followed by four digits, e.g., `proj-1234`). They want to prevent the creation of non-compliant resources.",
+  "questionText": "Which combination of services and features should be used to enforce this tagging policy and prevent the launch of non-compliant resources?",
+  "isMultiChoice": false,
+  "options": [
+    {
+      "letter": "A",
+      "text": "Activate the `project-id` tag as a cost allocation tag. Create a Tag Policy in AWS Organizations that defines the required tag key and its allowed value format (`proj-nnnn`). This policy will automatically prevent non-compliant resources from being created."
+    },
+    {
+      "letter": "B",
+      "text": "Create an AWS Config rule that checks for the presence and format of the `project-id` tag and set it to auto-remediate by deleting any non-compliant resources."
+    },
+    {
+      "letter": "C",
+      "text": "Activate the `project-id` tag as a cost allocation tag. Create a Tag Policy to define the tagging standard. Then, create a Service Control Policy (SCP) with a `Deny` effect for `s3:CreateBucket` and `ec2:RunInstances` actions if the request does not include a `project-id` tag that matches the required format, using condition keys like `aws:RequestTag` and `aws:TagKeys`."
+    },
+    {
+      "letter": "D",
+      "text": "Use AWS Budgets to create a budget that only tracks costs associated with resources that have the `project-id` tag. Configure a budget action to stop all EC2 instances that do not have this tag."
+    }
+  ],
+  "correctAnswers": [
+    "C"
+  ],
+  "explanation": "Why C is correct: This is the correct and most robust method for *enforcing* a tagging strategy. **Tag Policies** are used to define and report on compliance but do not, by themselves, prevent resource creation. To actually block the creation of non-compliant resources, you must use a **Service Control Policy (SCP)**. The SCP can be configured with a `Deny` rule that uses condition keys to inspect the tags in a creation request (`aws:RequestTag`) and deny the API call if the tags are missing or do not match the required pattern.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: This is a common misconception. Tag Policies are for governance and reporting; they do not block actions. They will report a resource as non-compliant, but they won't prevent its creation. \n**B**: This is a detective control, not a preventative one. The resource would be created first and then deleted, which can cause operational issues. Preventative controls (like SCPs) are preferred. \n**D**: AWS Budgets are for cost management and monitoring, not for enforcing resource configuration policies like tagging. A budget action is a response to exceeding a cost threshold, not a tool for real-time policy enforcement."
+},
+ 
+ {
   "number": 87,
   "title": "AWS Control Tower Customization and Enrollment",
   "scenario": "A company has an established AWS Control Tower landing zone. They now need to enroll an existing, production AWS account that was created before Control Tower was set up. This account has several existing AWS Config rules and a custom IAM role that conflicts with the `AWSControlTowerExecution` role name. The goal is to enroll the account with minimal disruption.",
