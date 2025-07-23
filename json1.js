@@ -1,4 +1,6 @@
-
+const main_title = "AWS SysOps Practice Quiz";
+ // --- DATA SOURCE ---
+const questions =
 [
   {
     "number": 1,
