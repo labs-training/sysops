@@ -1,8 +1,7 @@
 const cookie_name = "json1";
 const main_title = "AWS SysOps Practice Quiz";
  // --- DATA SOURCE ---
-const questions =
-[
+const questions = [
   {
     "number": 1,
     "title": "AWS Fleet Manager Secure Access",
@@ -1377,7 +1376,7 @@ const questions =
       "explanation": "Why D is correct: AWS Systems Manager Change Manager templates can be created in one account (typically a delegated administrator or the management account) and then shared across an organization or OUs using AWS Resource Access Manager (RAM). This is the intended scalable pattern. You create the master template in the central account, defining the approval workflow with the centrally-managed `DatabaseAdmins` role and SNS topic. Then, you share this template with the 'Prod' OU. Member accounts in that OU can then see and use this template to create change requests, which will be subject to the centrally defined approval process.",
       "wrongExplanation": "Why the others are wrong: \nA: This approach is not scalable. It requires manually creating and maintaining identical change templates in every single production account, leading to configuration drift and high operational overhead. \nB: Auto-approval workflows in Change Manager are for changes that do *not* require manual approval. The scenario explicitly requires manual approval from the `DatabaseAdmins` role. \nC: Delegating administration is a good first step for central management, but it doesn't solve the problem on its own. After delegating, you still need to create the template and share it (as described in option D) to make it available to member accounts."
     },
-t      "number": 53,
+    {"number": 53,
       "title": "SSM Change Manager Emergency Change Bypass",
       "scenario": "A company has a mandatory Change Manager approval process for a critical Automation runbook that reboots web servers. The approval process requires two distinct managers to approve the change request. During a major incident, the on-call engineer needs to execute this runbook immediately without waiting for the standard multi-hour approval window. The engineer has an `EmergencyAdmin` IAM role that should allow them to bypass the normal process.",
       "questionText": "What is the most secure and auditable way to allow the `EmergencyAdmin` role to bypass the Change Manager approval process?",
@@ -1670,7 +1669,7 @@ t      "number": 53,
       "explanation": "Why D is correct: This is the primary use case for SSM OpsCenter. OpsCenter is designed to be a central hub for viewing, investigating, and resolving operational issues (OpsItems). You can configure it to automatically create an OpsItem from sources like CloudWatch alarms. The key feature here is that when you create an OpsItem, you can associate it with Automation runbooks for remediation. By creating a rule in OpsCenter that says 'when an OpsItem is created from this specific CloudWatch alarm, automatically execute this specific runbook', you create a powerful, auditable, and centralized remediation workflow. This keeps the alarm, the operational event (OpsItem), and the remediation (runbook) tightly coupled within Systems Manager.",
       "wrongExplanation": "Why the others are wrong: \nA: This is an older, more complex pattern. While it works, it requires custom Lambda code. Using OpsCenter or direct SSM actions is the modern, managed approach. \nB: CloudWatch alarm actions can directly trigger an SSM Automation runbook. This is a very valid and direct approach. However, it does not create an OpsItem, which is a key tool for tracking and reporting on operational events. OpsCenter provides this tracking layer. Given the professional level, understanding the value of the OpsItem for tracking is key. Therefore, D is a more complete operational solution than B. \nC: This is an overly complex way to achieve what option D does natively. You would be using EventBridge to create an OpsItem, which then triggers the runbook. You can configure OpsCenter to do this directly without the intermediate EventBridge rule."
     },
-t      "number": 71,
+     {"number": 71,
       "title": "SSM OpsCenter Deduplication and Association",
       "scenario": "An application is experiencing a flapping issue, causing a CloudWatch alarm for high CPU to repeatedly transition between `OK` and `ALARM` states every few minutes. This alarm is configured to create an OpsItem in AWS Systems Manager OpsCenter. The operations team is being overwhelmed by a flood of new OpsItems, one for each time the alarm triggers. They want to consolidate these related events into a single, active OpsItem.",
       "questionText": "How can OpsCenter be configured to prevent the creation of multiple OpsItems for this flapping alarm?",
