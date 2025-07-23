@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .explanation-box {
+            transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .explanation-box.visible {
+            max-height: 500px; /* Adjust as needed for content */
+            opacity: 1;
+        }
+        .option-btn.selected {
+            border-color: #3b82f6; /* blue-500 */
+            border-width: 2px;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .option-btn.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+            color: #15803d; /* green-700 */
+        }
+        .option-btn.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #b91c1c; /* red-700 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="quiz-container" class="container mx-auto p-4 md:p-8" style="max-width: 1500px;">
+        <!-- Header: Title, Score, Timer, Reset -->
+        <header class="bg-white p-4 rounded-lg shadow-md mb-6 ">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <h1 id="main-title" class="text-xl md:text-xl font-bold text-gray-700"></h1>
+                <div class="flex items-center gap-4">
+                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-1 py-2 rounded-lg">Score: 0 / 0</div>
+                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg transition-colors">Reset Quiz</button>
+                </div>
+            </div>
+             <div class="flex items-center gap-2 mt-4">
+                <div id="timer" class="text-sm font-mono bg-gray-200 px-3 py-1 rounded">00:00:00</div>
+                <button id="start-timer-btn" class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded">Start</button>
+                <button id="stop-timer-btn" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded">Stop</button>
+                <button id="reset-timer-btn" class="text-xs bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded">Reset</button>
+            </div>
+        </header>
+
+        <!-- Main content for questions -->
+        <main id="questions-wrapper">
+            <!-- Questions will be injected here by JavaScript -->
+        </main>
+
+        <!-- Navigation -->
+        <nav id="navigation-controls" class="mt-6 flex justify-between items-center bg-white p-3 rounded-lg shadow-md ">
+            <button id="prev-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">Previous</button>
+            <div class="flex items-center gap-2">
+                <label for="question-jump" class="text-sm font-medium">Jump to:</label>
+                <select id="question-jump" class="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
+            </div>
+            <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed">Next</button>
+        </nav>
+    </div>
+  <script src="json1.js"></script>
+    <script>
+
+        // --- STATE MANAGEMENT ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let userSelections = Array(questions.length).fill(null).map(() => []);
+        let answeredCorrectly = Array(questions.length).fill(false);
+        
+        // Timer state
+        let timerInterval;
+        let totalSeconds = 0;
+
+        // --- DOM ELEMENTS ---
+        const mainTitleEl = document.getElementById('main-title');
+        const scoreboardEl = document.getElementById('scoreboard');
+        const questionsWrapperEl = document.getElementById('questions-wrapper');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const questionJumpEl = document.getElementById('question-jump');
+        const resetQuizBtn = document.getElementById('reset-quiz-btn');
+        const timerEl = document.getElementById('timer');
+        const startTimerBtn = document.getElementById('start-timer-btn');
+        const stopTimerBtn = document.getElementById('stop-timer-btn');
+        const resetTimerBtn = document.getElementById('reset-timer-btn');
+
+        // --- COOKIE HELPERS ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (JSON.stringify(value) || "") + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) {
+                    try {
+                        return JSON.parse(c.substring(nameEQ.length, c.length));
+                    } catch (e) {
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function deleteCookie(name) {
+            document.cookie = name + '=; Max-Age=-99999999;';
+        }
+
+        // --- STATE PERSISTENCE ---
+        function saveState() {
+            const state = {
+                currentQuestionIndex,
+                score,
+                userSelections,
+                answeredCorrectly,
+                totalSeconds
+            };
+            setCookie('quizState', state, 7); // Save state for 7 days
+        }
+
+        function loadState() {
+            const savedState = getCookie('quizState');
+            if (savedState) {
+                currentQuestionIndex = savedState.currentQuestionIndex || 0;
+                score = savedState.score || 0;
+                userSelections = savedState.userSelections || Array(questions.length).fill(null).map(() => []);
+                answeredCorrectly = savedState.answeredCorrectly || Array(questions.length).fill(false);
+                totalSeconds = savedState.totalSeconds || 0;
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState(); // Load state from cookie before setting up the quiz
+            setupQuiz();
+            addEventListeners();
+        });
+
+        function setupQuiz() {
+            document.title = main_title;
+            mainTitleEl.textContent = main_title;
+            questionsWrapperEl.innerHTML = '';
+            questionJumpEl.innerHTML = '';
+
+            questions.forEach((q, index) => {
+                renderQuestion(q, index);
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `Question ${index + 1}`;
+                questionJumpEl.appendChild(option);
+            });
+
+            // After rendering, apply the loaded state to the UI
+            questions.forEach((q, index) => {
+                const selections = userSelections[index];
+                if (selections && selections.length > 0) {
+                    const qContainer = document.getElementById(`question-${index}`);
+                    selections.forEach(letter => {
+                        const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
+                        if (btn) btn.classList.add('selected');
+                    });
+                    if (!answeredCorrectly[index]) {
+                        qContainer.querySelector('.confirm-btn').disabled = false;
+                    }
+                }
+                if (answeredCorrectly[index]) {
+                    applyConfirmedState(index);
+                }
+            });
+            
+            updateScoreboard();
+            timerEl.textContent = formatTime(totalSeconds);
+            showQuestion(currentQuestionIndex, true); // Show the last question without saving state again
+        }
+        
+        function addEventListeners() {
+            nextBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
+            prevBtn.addEventListener('click', () => showQuestion(currentQuestionIndex - 1));
+            questionJumpEl.addEventListener('change', (e) => showQuestion(parseInt(e.target.value)));
+            resetQuizBtn.addEventListener('click', resetQuiz);
+            startTimerBtn.addEventListener('click', startTimer);
+            stopTimerBtn.addEventListener('click', stopTimer);
+            resetTimerBtn.addEventListener('click', resetTimer);
+        }
+
+        // --- RENDERING ---
+        function renderQuestion(question, index) {
+            const questionContainer = document.createElement('div');
+            questionContainer.id = `question-${index}`;
+            questionContainer.className = 'question-container bg-white p-6 rounded-lg shadow-md mb-4 hidden';
+
+            const choiceText = `(Choose ${question.correctAnswers.length})`;
+
+           questionContainer.innerHTML = `
+                <p class="text-gray-800 text-xl mb-4">${question.scenario}<br></p>
+                <p class="text-lg font-medium mb-4">${question.questionText} <span class="text-sm font-normal text-gray-500">${question.isMultiChoice ? choiceText : '(Choose one)'}</span></p>
+                <div class="options-grid grid grid-cols-1 gap-3 mb-4">
+                    ${question.options.map(opt => `
+                        <button class="option-btn w-full text-left p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition-colors" data-question-index="${index}" data-letter="${opt.letter}">
+                            <span class="font-bold mr-2">${opt.letter}.</span> ${opt.text}
+                        </button>
+                    `).join('')}
+                </div><div class="flex  justify-end">
+                <button class="confirm-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Confirm</button>
+               </div> <div class="explanation-box mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <p class="explanation-text whitespace-pre-wrap  text-base"></p>
+                    <p class="wrong-explanation-text whitespace-pre-wrap  text-base mt-2"></p>
+                </div>
+            `;
+
+            questionsWrapperEl.appendChild(questionContainer);
+
+            const optionButtons = questionContainer.querySelectorAll('.option-btn');
+            optionButtons.forEach(btn => btn.addEventListener('click', handleOptionSelect));
+            questionContainer.querySelector('.confirm-btn').addEventListener('click', handleConfirm);
+        }
+
+        function applyConfirmedState(index) {
+            const question = questions[index];
+            const selections = userSelections[index];
+            const qContainer = document.getElementById(`question-${index}`);
+            const confirmBtn = qContainer.querySelector('.confirm-btn');
+            const optionButtons = qContainer.querySelectorAll('.option-btn');
+
+            confirmBtn.disabled = true;
+            optionButtons.forEach(btn => btn.disabled = true);
+
+            optionButtons.forEach(btn => {
+                const letter = btn.dataset.letter;
+                if (question.correctAnswers.includes(letter)) {
+                    btn.classList.add('correct');
+                } else if (selections.includes(letter)) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            const explanationBox = qContainer.querySelector('.explanation-box');
+            explanationBox.querySelector('.explanation-text').textContent = question.explanation;
+            explanationBox.querySelector('.wrong-explanation-text').textContent = question.wrongExplanation;
+            explanationBox.classList.add('visible');
+        }
+
+        // --- LOGIC & EVENT HANDLERS ---
+        function handleOptionSelect(event) {
+            const selectedBtn = event.currentTarget;
+            const index = parseInt(selectedBtn.dataset.questionIndex);
+            const letter = selectedBtn.dataset.letter;
+            const question = questions[index];
+            const parent = selectedBtn.closest('.options-grid');
+
+            if (question.isMultiChoice) {
+                const currentSelections = userSelections[index];
+                const maxSelections = question.correctAnswers.length;
+
+                if (currentSelections.includes(letter)) {
+                    userSelections[index] = currentSelections.filter(l => l !== letter);
+                    selectedBtn.classList.remove('selected');
+                } else {
+                    if (currentSelections.length >= maxSelections) {
+                        const oldestSelection = userSelections[index].shift();
+                        const oldestBtn = parent.querySelector(`.option-btn[data-letter="${oldestSelection}"]`);
+                        if (oldestBtn) {
+                            oldestBtn.classList.remove('selected');
+                        }
+                    }
+                    userSelections[index].push(letter);
+                    selectedBtn.classList.add('selected');
+                }
+            } else {
+                userSelections[index] = [letter];
+                parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+                selectedBtn.classList.add('selected');
+            }
+            
+            const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
+            confirmBtn.disabled = userSelections[index].length === 0;
+            saveState();
+        }
+
+        function handleConfirm(event) {
+            const confirmBtn = event.currentTarget;
+            const index = parseInt(confirmBtn.dataset.questionIndex);
+            const question = questions[index];
+            const selections = userSelections[index];
+            
+            const sortedSelections = [...selections].sort();
+            const sortedCorrect = [...question.correctAnswers].sort();
+            const isCorrect = JSON.stringify(sortedSelections) === JSON.stringify(sortedCorrect);
+            
+            if (isCorrect && !answeredCorrectly[index]) {
+                score++;
+                answeredCorrectly[index] = true;
+                updateScoreboard();
+            } else if (!isCorrect) {
+                 answeredCorrectly[index] = true; // Mark as answered even if wrong
+            }
+            
+            applyConfirmedState(index);
+            saveState();
+        }
+
+        function showQuestion(index, isInitialLoad = false) {
+            if (index < 0 || index >= questions.length) return;
+
+            const currentQuestionEl = document.getElementById(`question-${currentQuestionIndex}`);
+            if (currentQuestionEl) currentQuestionEl.classList.add('hidden');
+
+            const newQuestionEl = document.getElementById(`question-${index}`);
+            if (newQuestionEl) newQuestionEl.classList.remove('hidden');
+
+            currentQuestionIndex = index;
+            questionJumpEl.value = index;
+
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === questions.length - 1;
+
+            if (!isInitialLoad) {
+                saveState();
+            }
+        }
+
+        function updateScoreboard() {
+            scoreboardEl.textContent = `Score: ${score} / ${questions.length}`;
+        }
+        
+        function resetQuiz() {
+            deleteCookie('quizState'); // Clear the saved state
+            
+            // Reset state variables to their initial values
+            currentQuestionIndex = 0;
+            score = 0;
+            userSelections = Array(questions.length).fill(null).map(() => []);
+            answeredCorrectly.fill(false);
+            
+            // Reset UI
+            questions.forEach((q, index) => {
+                const qContainer = document.getElementById(`question-${index}`);
+                qContainer.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('selected', 'correct', 'incorrect');
+                });
+                qContainer.querySelector('.confirm-btn').disabled = true;
+                qContainer.querySelector('.explanation-box').classList.remove('visible');
+            });
+            
+            updateScoreboard();
+            showQuestion(0);
+            resetTimer();
+            location.reload();
+        }
+        
+        // --- TIMER FUNCTIONS ---
+        function startTimer() {
+            if (timerInterval) return;
+            timerInterval = setInterval(() => {
+                totalSeconds++;
+                timerEl.textContent = formatTime(totalSeconds);
+                saveState(); // Save time progress
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        function resetTimer() {
+            stopTimer();
+            totalSeconds = 0;
+            timerEl.textContent = formatTime(totalSeconds);
+            saveState();
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+    </script>
+
+</body>
+</html>
