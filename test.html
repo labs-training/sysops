@@ -202,42 +202,44 @@ const questions = [
             addEventListeners();
         });
 
-        function setupQuiz() {
-            document.title = main_title;
-            mainTitleEl.textContent = main_title;
-            questionsWrapperEl.innerHTML = '';
-            questionJumpEl.innerHTML = '';
+       function setupQuiz() {
+    document.title = main_title;
+    mainTitleEl.textContent = main_title;
+    questionsWrapperEl.innerHTML = '';
+    questionJumpEl.innerHTML = '';
 
-            questions.forEach((q, index) => {
-                renderQuestion(q, index);
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = `Question ${index + 1}`;
-                questionJumpEl.appendChild(option);
-            });
+    questions.forEach((q, index) => {
+        renderQuestion(q, index);
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `Question ${index + 1}`;
+        questionJumpEl.appendChild(option);
+    });
 
-            // After rendering, apply the loaded state to the UI
-            questions.forEach((q, index) => {
-                const selections = userSelections[index];
-                if (selections && selections.length > 0) {
-                    const qContainer = document.getElementById(`question-${index}`);
-                    selections.forEach(letter => {
-                        const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
-                        if (btn) btn.classList.add('selected');
-                    });
-                    if (!answeredCorrectly[index]) {
-                        qContainer.querySelector('.confirm-btn').disabled = false;
-                    }
-                }
-                if (answeredCorrectly[index]) {
-                    applyConfirmedState(index);
-                }
+    // After rendering, apply the loaded state to the UI
+    questions.forEach((q, index) => {
+        const selections = userSelections[index];
+        if (selections && selections.length > 0) {
+            const qContainer = document.getElementById(`question-${index}`);
+            selections.forEach(letter => {
+                const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
+                if (btn) btn.classList.add('selected');
             });
-            
-            updateScoreboard();
-            timerEl.textContent = formatTime(totalSeconds);
-            showQuestion(currentQuestionIndex, true); // Show the last question without saving state again
+            if (!answeredCorrectly[index]) {
+                const confirmBtn = qContainer.querySelector('.confirm-btn');
+                // --- THIS IS THE MODIFIED LOGIC FOR PAGE LOAD ---
+                confirmBtn.disabled = selections.length !== q.correctAnswers.length;
+            }
         }
+        if (answeredCorrectly[index]) {
+            applyConfirmedState(index);
+        }
+    });
+    
+    updateScoreboard();
+    timerEl.textContent = formatTime(totalSeconds);
+    showQuestion(currentQuestionIndex, true); // Show the last question without saving state again
+}
         
         function addEventListeners() {
             nextBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
@@ -307,41 +309,37 @@ const questions = [
         }
 
         // --- LOGIC & EVENT HANDLERS ---
-        function handleOptionSelect(event) {
-            const selectedBtn = event.currentTarget;
-            const index = parseInt(selectedBtn.dataset.questionIndex);
-            const letter = selectedBtn.dataset.letter;
-            const question = questions[index];
-            const parent = selectedBtn.closest('.options-grid');
+     function handleOptionSelect(event) {
+    const selectedBtn = event.currentTarget;
+    const index = parseInt(selectedBtn.dataset.questionIndex);
+    const letter = selectedBtn.dataset.letter;
+    const question = questions[index];
+    const parent = selectedBtn.closest('.options-grid');
 
-            if (question.isMultiChoice) {
-                const currentSelections = userSelections[index];
-                const maxSelections = question.correctAnswers.length;
-
-                if (currentSelections.includes(letter)) {
-                    userSelections[index] = currentSelections.filter(l => l !== letter);
-                    selectedBtn.classList.remove('selected');
-                } else {
-                    if (currentSelections.length >= maxSelections) {
-                        const oldestSelection = userSelections[index].shift();
-                        const oldestBtn = parent.querySelector(`.option-btn[data-letter="${oldestSelection}"]`);
-                        if (oldestBtn) {
-                            oldestBtn.classList.remove('selected');
-                        }
-                    }
-                    userSelections[index].push(letter);
-                    selectedBtn.classList.add('selected');
-                }
-            } else {
-                userSelections[index] = [letter];
-                parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-                selectedBtn.classList.add('selected');
-            }
-            
-            const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
-            confirmBtn.disabled = userSelections[index].length === 0;
-            saveState();
+    if (question.isMultiChoice) {
+        const currentSelections = userSelections[index];
+        // Note: For multi-choice, we no longer need to enforce a max limit here
+        // as the confirm button logic will handle it.
+        if (currentSelections.includes(letter)) {
+            userSelections[index] = currentSelections.filter(l => l !== letter);
+            selectedBtn.classList.remove('selected');
+        } else {
+            userSelections[index].push(letter);
+            selectedBtn.classList.add('selected');
         }
+    } else {
+        userSelections[index] = [letter];
+        parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+        selectedBtn.classList.add('selected');
+    }
+    
+    const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
+    // --- THIS IS THE MODIFIED LINE ---
+    // Enable the button only if the selection count equals the correct answer count.
+    confirmBtn.disabled = userSelections[index].length !== question.correctAnswers.length;
+    
+    saveState();
+}
 
         function handleConfirm(event) {
             const confirmBtn = event.currentTarget;
