@@ -73,10 +73,12 @@
             <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed">Next</button>
         </nav>
     </div>
+    
+    <!-- External script with quiz data -->
   <script src="sysops.json.js"></script> 
-    <script>
-        
 
+    <!-- Main application logic -->
+    <script>
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
         let score = 0;
@@ -206,9 +208,15 @@
         }
         
         function addEventListeners() {
-            // Add event listener to the main container to catch all interactions
-            document.getElementById('quiz-container').addEventListener('click', handleUserInteraction);
-            document.getElementById('quiz-container').addEventListener('change', handleUserInteraction);
+            // Listener for all interactions inside the main container for delegation
+            document.getElementById('quiz-container').addEventListener('click', (e) => {
+                handleUserInteraction();
+                dispatchInteraction(e);
+            });
+            document.getElementById('quiz-container').addEventListener('change', (e) => {
+                handleUserInteraction();
+                dispatchInteraction(e);
+            });
 
             // Specific listeners for manual timer controls that override inactivity
             startTimerBtn.addEventListener('click', (e) => {
@@ -255,8 +263,6 @@
             `;
 
             questionsWrapperEl.appendChild(questionContainer);
-
-            // No need for individual listeners here anymore, they are handled by the container
         }
 
         function applyConfirmedState(index) {
@@ -285,9 +291,8 @@
             explanationBox.querySelector('.wrong-explanation-text').textContent = question.wrongExplanation;
         }
 
-        // --- LOGIC & EVENT HANDLERS ---
-        function handleOptionSelect(event) {
-            const selectedBtn = event.currentTarget;
+        // --- LOGIC & EVENT HANDLERS (REFACTORED) ---
+        function handleOptionSelect(selectedBtn) {
             const index = parseInt(selectedBtn.dataset.questionIndex);
             const letter = selectedBtn.dataset.letter;
             const question = questions[index];
@@ -322,8 +327,7 @@
             saveState();
         }
 
-        function handleConfirm(event) {
-            const confirmBtn = event.currentTarget;
+        function handleConfirm(confirmBtn) {
             const index = parseInt(confirmBtn.dataset.questionIndex);
             const question = questions[index];
             const selections = userSelections[index];
@@ -342,8 +346,7 @@
             saveState();
         }
 
-        function handleExplanationClick(event) {
-            const btn = event.currentTarget;
+        function handleExplanationClick(btn) {
             const index = parseInt(btn.dataset.questionIndex);
             const explanationBox = document.querySelector(`#question-${index} .explanation-box`);
             explanationBox.classList.toggle('visible');
@@ -435,35 +438,35 @@
         }
         
         // --- EVENT DISPATCHER ---
-        // This function will check the event target and call the appropriate handler.
-        // It's now the main hub for interactions within a question.
         function dispatchInteraction(event) {
             const target = event.target;
-            if (target.classList.contains('option-btn')) {
-                handleOptionSelect(event);
-            } else if (target.classList.contains('confirm-btn')) {
-                handleConfirm(event);
-            } else if (target.classList.contains('explanation-btn')) {
-                handleExplanationClick(event);
-            } else if (target.id === 'prev-btn' || target.id === 'next-btn') {
-                 showQuestion(target.id === 'prev-btn' ? currentQuestionIndex - 1 : currentQuestionIndex + 1);
+            
+            const optionBtn = target.closest('.option-btn');
+            if (optionBtn) {
+                handleOptionSelect(optionBtn);
+                return;
+            }
+
+            const confirmBtn = target.closest('.confirm-btn');
+            if (confirmBtn) {
+                handleConfirm(confirmBtn);
+                return;
+            }
+
+            const explanationBtn = target.closest('.explanation-btn');
+            if (explanationBtn) {
+                handleExplanationClick(explanationBtn);
+                return;
+            }
+
+            if (target.id === 'prev-btn') {
+                 showQuestion(currentQuestionIndex - 1);
+            } else if (target.id === 'next-btn') {
+                 showQuestion(currentQuestionIndex + 1);
             } else if (target.id === 'question-jump') {
                 showQuestion(parseInt(target.value));
             }
         }
-        
-        // Re-wire the container listener to use the dispatcher
-        document.getElementById('quiz-container').removeEventListener('click', handleUserInteraction);
-        document.getElementById('quiz-container').removeEventListener('change', handleUserInteraction);
-        document.getElementById('quiz-container').addEventListener('click', (e) => {
-            handleUserInteraction();
-            dispatchInteraction(e);
-        });
-        document.getElementById('quiz-container').addEventListener('change', (e) => {
-             handleUserInteraction();
-             dispatchInteraction(e);
-        });
-
 
     </script>
 
