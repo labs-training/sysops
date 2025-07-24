@@ -74,12 +74,12 @@
 
     <!-- Main application logic -->
     <script>
+       
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
         let score = 0;
-        // The 'questions' variable is expected to be loaded from the external script.
-        let userSelections = Array(questions.length).fill(null).map(() => []);
-        let answeredCorrectly = Array(questions.length).fill(false);
+        let userSelections;
+        let answeredCorrectly;
         
         // Timer state
         let timerInterval;
@@ -155,6 +155,10 @@
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize arrays that depend on the 'questions' variable from test.js
+            userSelections = Array(questions.length).fill(null).map(() => []);
+            answeredCorrectly = Array(questions.length).fill(false);
+
             const stateLoaded = loadState(); // Load state from cookie before setting up the quiz
             setupQuiz();
             addEventListeners();
@@ -184,7 +188,9 @@
                     const qContainer = document.getElementById(`question-${index}`);
                     selections.forEach(letter => {
                         const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
-                        if (btn) btn.classList.add('selected');
+                        if (btn) {
+                            btn.classList.add('selected', 'font-bold');
+                        }
                     });
                     if (!answeredCorrectly[index]) {
                         qContainer.querySelector('.confirm-btn').disabled = userSelections[index].length !== q.correctAnswers.length;
@@ -284,22 +290,24 @@
 
                 if (currentSelections.includes(letter)) {
                     userSelections[index] = currentSelections.filter(l => l !== letter);
-                    selectedBtn.classList.remove('selected');
+                    selectedBtn.classList.remove('selected', 'font-bold');
                 } else {
                     if (currentSelections.length >= maxSelections) {
                         const oldestSelection = userSelections[index].shift();
                         const oldestBtn = parent.querySelector(`.option-btn[data-letter="${oldestSelection}"]`);
                         if (oldestBtn) {
-                            oldestBtn.classList.remove('selected');
+                            oldestBtn.classList.remove('selected', 'font-bold');
                         }
                     }
                     userSelections[index].push(letter);
-                    selectedBtn.classList.add('selected');
+                    selectedBtn.classList.add('selected', 'font-bold');
                 }
             } else {
+                parent.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.classList.remove('selected', 'font-bold');
+                });
                 userSelections[index] = [letter];
-                parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-                selectedBtn.classList.add('selected');
+                selectedBtn.classList.add('selected', 'font-bold');
             }
             
             const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
@@ -368,7 +376,7 @@
                 const qContainer = document.getElementById(`question-${index}`);
                 qContainer.querySelectorAll('.option-btn').forEach(btn => {
                     btn.disabled = false;
-                    btn.classList.remove('selected', 'correct', 'incorrect');
+                    btn.classList.remove('selected', 'correct', 'incorrect', 'font-bold');
                 });
                 qContainer.querySelector('.confirm-btn').disabled = true;
                 qContainer.querySelector('.explanation-btn').disabled = true;
@@ -379,7 +387,6 @@
             showQuestion(0);
             resetTimer();
             handleUserInteraction();
-            loction.reload();
         }
         
         // --- TIMER & INACTIVITY FUNCTIONS ---
