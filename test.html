@@ -73,8 +73,49 @@
             <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed">Next</button>
         </nav>
     </div>
-  <script src="sysops.json.js"></script> 
+  <script </script> 
     <script>
+    const cookie_name = "json0";
+const main_title = "AWS SysOps Practice Quiz";
+ // --- DATA SOURCE ---
+const questions = [
+{
+  "number": 88,
+  "title": "CloudFormation Advanced Terminology",
+  "scenario": "A DevOps team is managing a critical, multi-resource production stack using AWS CloudFormation. Their primary concerns are preventing accidental updates to their RDS database instance and ensuring that any proposed changes to the stack can be reviewed for potential impact before being applied. They need to implement controls that are native to the CloudFormation service.",
+  "questionText": "Which two CloudFormation features or concepts are essential for preventing unintended resource modifications and safely managing updates to a critical production stack? (Choose two)",
+  "isMultiChoice": true,
+  "options": [
+    {
+      "letter": "A",
+      "text": "A Stack Policy with an \"Allow\" effect for all actions on all resources."
+    },
+    {
+      "letter": "B",
+      "text": "A Change Set, generated before updating the stack."
+    },
+    {
+      "letter": "C",
+      "text": "A Stack Policy with a \"Deny\" effect for \"Update:\" actions on the logical ID of the production database."
+    },
+    {
+      "letter": "D",
+      "text": "A DeletionPolicy of \"Snapshot\" on the database resource."
+    },
+    {
+      "letter": "E",
+      "text": "Drift Detection scheduled to run daily on the stack."
+    }
+  ],
+  "correctAnswers": [
+    "B",
+    "C"
+  ],
+  "explanation": "Why B and C are correct: \n**B** is correct because a **Change Set** is the CloudFormation feature designed specifically for previewing changes. It provides a summary of the proposed modifications (creations, updates, deletions) to a stack's resources, allowing the team to review the impact before executing the update, which is a critical safety practice.\n**C** is correct because a **Stack Policy** is a JSON document that controls which update actions can be performed on which resources within a stack. Applying a policy with a \"Deny\" effect on update actions for the logical ID of the database directly prevents any CloudFormation update operation from modifying that specific resource, thus protecting it from accidental changes.",
+  "wrongExplanation": "Why the others are wrong: \n**A**: A Stack Policy that allows all actions provides no protection whatsoever; the default behavior is to allow all updates, so this policy would be redundant and ineffective. \n**D**: A DeletionPolicy of \"Snapshot\" or \"Retain\" only applies when the entire stack is deleted or when the resource itself is removed from the template. It does not prevent in-place updates or modifications to the resource while it remains part of the stack. \n**E**: Drift Detection is a detective control, not a preventative one. It identifies when a resource's actual configuration has deviated from its expected configuration in the template (e.g., due to manual changes). It reports on drift but does not prevent CloudFormation from applying intended (or unintended) updates."
+}
+ 
+]
 
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
