@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-      <link rel="icon" type="image/jpg" href="favicon.png">
+  <link rel="icon" type="image/jpg" href="favicon.png">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -71,7 +71,7 @@
     </div>
     
     <!-- External script with quiz data -->
-    <script src="json3.js"></script>
+     <script src="json3.js"></script>
 
     <!-- Main application logic -->
     <script>
@@ -155,18 +155,37 @@
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize arrays that depend on the 'questions' variable from test.js
-            userSelections = Array(questions.length).fill(null).map(() => []);
-            answeredCorrectly = Array(questions.length).fill(false);
+       
 
-            const stateLoaded = loadState(); // Load state from cookie before setting up the quiz
-            setupQuiz();
-            addEventListeners();
-            if (!stateLoaded) {
-                handleUserInteraction();
-            }
-        });
+     document.addEventListener('DOMContentLoaded', () => {
+    // --- GDPR POP-IN LOGIC START ---
+    const gdprModal = document.getElementById('gdpr-modal');
+    const gdprOverlay = document.getElementById('gdpr-overlay');
+    const acceptGdprBtn = document.getElementById('accept-gdpr-btn');
+
+    if (!getCookie('gdprAccepted')) {
+        gdprModal.classList.remove('hidden');
+        gdprOverlay.classList.remove('hidden');
+    }
+
+    acceptGdprBtn.addEventListener('click', () => {
+        gdprModal.classList.add('hidden');
+        gdprOverlay.classList.add('hidden');
+        setCookie('gdprAccepted', 'true', 365); // Set cookie for 1 year
+    });
+    // --- GDPR POP-IN LOGIC END ---
+
+    // Initialize arrays that depend on the 'questions' variable from test.js
+    userSelections = Array(questions.length).fill(null).map(() => []);
+    answeredCorrectly = Array(questions.length).fill(false);
+
+    const stateLoaded = loadState(); // Load state from cookie before setting up the quiz
+    setupQuiz();
+    addEventListeners();
+    if (!stateLoaded) {
+        handleUserInteraction();
+    }
+});
 
         function setupQuiz() {
             document.title = main_title;
@@ -459,6 +478,22 @@
         }
 
     </script>
-
+<div id="gdpr-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 z-40"></div>
+<div id="gdpr-modal" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl p-6 md:p-8 w-11/12 md:max-w-lg z-50">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Privacy & Cookie Notice</h2>
+    <div class="text-gray-700 space-y-3">
+        <p>Welcome! This website is for demonstration and testing purposes only.</p>
+        <p>We use a single, functional cookie on this site for one reason: <strong class="font-semibold">to save your quiz progress.</strong></p>
+        <ul class="list-disc list-inside space-y-2 pl-2">
+            <li>This allows you to close the page and resume the quiz later exactly where you left off.</li>
+            <li>This cookie is automatically deleted when you click the <strong class="font-semibold">"Reset Quiz"</strong> button.</li>
+            <li>We <strong class="font-semibold">do not</strong> use any tracking, advertising, or analytics cookies. Your activity is not monitored or shared.</li>
+        </ul>
+        <p class="mt-4">By clicking "Accept and Continue," you acknowledge and agree to the use of this functional cookie.</p>
+    </div>
+    <div class="mt-6 text-right">
+        <button id="accept-gdpr-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors">Accept and Continue</button>
+    </div>
+</div>
 </body>
 </html>
