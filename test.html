@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,12 +42,12 @@
 
     <div id="quiz-container" class="container mx-auto p-4 md:p-8" style="max-width: 1500px;">
         <!-- Header: Title, Score, Timer, Reset -->
-        <header class="bg-white p-4 rounded-lg shadow-md mb-6 ">
+        <header class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-0 z-10">
             <div class="flex flex-wrap justify-between items-center gap-4">
-                <h1 id="main-title" class="text-xl md:text-xl font-bold text-gray-700"></h1>
+                <h1 id="main-title" class="text-2xl md:text-3xl font-bold text-gray-700"></h1>
                 <div class="flex items-center gap-4">
-                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-1 py-2 rounded-lg">Score: 0 / 0</div>
-                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg transition-colors">Reset Quiz</button>
+                    <div id="scoreboard" class="text-lg font-semibold bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">Score: 0 / 0</div>
+                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Reset Quiz</button>
                 </div>
             </div>
              <div class="flex items-center gap-2 mt-4">
@@ -64,7 +64,7 @@
         </main>
 
         <!-- Navigation -->
-        <nav id="navigation-controls" class="mt-6 flex justify-between items-center bg-white p-3 rounded-lg shadow-md ">
+        <nav id="navigation-controls" class="mt-6 flex justify-between items-center bg-white p-3 rounded-lg shadow-md sticky bottom-0 z-10">
             <button id="prev-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">Previous</button>
             <div class="flex items-center gap-2">
                 <label for="question-jump" class="text-sm font-medium">Jump to:</label>
@@ -73,8 +73,77 @@
             <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed">Next</button>
         </nav>
     </div>
-  <script src="sysops.json.js"></script> 
+
     <script>
+        const cookie_name = "json0";
+        const main_title = "AWS SysOps Practice Quiz";
+         // --- DATA SOURCE ---
+        const questions = [
+         {
+                "number": 1,
+                "title": "EC2 Connectivity Timeout (Based on #339)",
+                "scenario": "A SysOps administrator launches a new Amazon EC2 Linux instance into a public subnet.  The instance is running, and the administrator has its public IP address.  However, every attempt to connect remotely (e.g., via SSH) results in a connection timeout error. ",
+                "questionText": "Which action will allow the SysOps administrator to remotely connect to the instance? ",
+                "isMultiChoice": false,
+                "options": [
+                    {
+                        "letter": "A",
+                        "text": "Add a route table entry in the public subnet for the SysOps administrator's IP address. "
+                    },
+                    {
+                        "letter": "B",
+                        "text": "Add an outbound network ACL rule to allow TCP port 22 for the SysOps administrator's IP address. "
+                    },
+                    {
+                        "letter": "C",
+                        "text": "Modify the instance security group to allow inbound SSH traffic from the SysOps administrator's IP address. "
+                    },
+                    {
+                        "letter": "D",
+                        "text": "Modify the instance security group to allow outbound SSH traffic to the SysOps administrator's IP address. "
+                    }
+                ],
+                "correctAnswers": ["C"],
+                "explanation": "Correct Answer: C \nExplanation: A connection timeout error is a classic sign that a firewall is blocking the traffic before it can reach the destination.  In AWS, the primary firewall protecting an EC2 instance is its Security Group.  By default, security groups deny all inbound traffic.  To connect to a Linux instance using SSH, you must explicitly allow inbound traffic on TCP port 22.  Modifying the security group to add an inbound rule for port 22 from the administrator's specific IP address is the correct and most secure solution. ",
+                "wrongExplanation": "Why the others are wrong: \nA: Route tables control the flow of traffic between subnets and to destinations outside the VPC (like the internet via an Internet Gateway).  They do not filter traffic to a specific instance based on port or IP.  The instance is in a public subnet, which should already have a route to the Internet Gateway. \nB: This is incorrect for two reasons.  First, the problem is with inbound traffic to the instance, not outbound.  Second, Network ACLs are stateless, but they are less commonly the cause of initial connection issues than security groups.  The default Network ACL allows all traffic. \nD: The connection attempt is an inbound request to the EC2 instance.  An outbound rule controls traffic leaving the instance.  While outbound rules are important, they are not the cause of this specific problem. "
+            },
+        {
+          "number": 88,
+          "title": "CloudFormation Advanced Terminology",
+          "scenario": "A DevOps team is managing a critical, multi-resource production stack using AWS CloudFormation. Their primary concerns are preventing accidental updates to their RDS database instance and ensuring that any proposed changes to the stack can be reviewed for potential impact before being applied. They need to implement controls that are native to the CloudFormation service.",
+          "questionText": "Which two CloudFormation features or concepts are essential for preventing unintended resource modifications and safely managing updates to a critical production stack? (Choose two)",
+          "isMultiChoice": true,
+          "options": [
+            {
+              "letter": "A",
+              "text": "A Stack Policy with an \"Allow\" effect for all actions on all resources."
+            },
+            {
+              "letter": "B",
+              "text": "A Change Set, generated before updating the stack."
+            },
+            {
+              "letter": "C",
+              "text": "A Stack Policy with a \"Deny\" effect for \"Update:\" actions on the logical ID of the production database."
+            },
+            {
+              "letter": "D",
+              "text": "A DeletionPolicy of \"Snapshot\" on the database resource."
+            },
+            {
+              "letter": "E",
+              "text": "Drift Detection scheduled to run daily on the stack."
+            }
+          ],
+          "correctAnswers": [
+            "B",
+            "C"
+          ],
+          "explanation": "Why B and C are correct: \n**B** is correct because a **Change Set** is the CloudFormation feature designed specifically for previewing changes. It provides a summary of the proposed modifications (creations, updates, deletions) to a stack's resources, allowing the team to review the impact before executing the update, which is a critical safety practice.\n**C** is correct because a **Stack Policy** is a JSON document that controls which update actions can be performed on which resources within a stack. Applying a policy with a \"Deny\" effect on update actions for the logical ID of the database directly prevents any CloudFormation update operation from modifying that specific resource, thus protecting it from accidental changes.",
+          "wrongExplanation": "Why the others are wrong: \n**A**: A Stack Policy that allows all actions provides no protection whatsoever; the default behavior is to allow all updates, so this policy would be redundant and ineffective. \n**D**: A DeletionPolicy of \"Snapshot\" or \"Retain\" only applies when the entire stack is deleted or when the resource itself is removed from the template. It does not prevent in-place updates or modifications to the resource while it remains part of the stack. \n**E**: Drift Detection is a detective control, not a preventative one. It identifies when a resource's actual configuration has deviated from its expected configuration in the template (e.g., due to manual changes). It reports on drift but does not prevent CloudFormation from applying intended (or unintended) updates."
+        }
+         
+        ]
 
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
@@ -140,11 +209,11 @@
                 answeredCorrectly,
                 totalSeconds
             };
-            setCookie(cookie_name, state, 7); // Save state for 7 days
+            setCookie('quizState', state, 7); // Save state for 7 days
         }
 
         function loadState() {
-            const savedState = getCookie(cookie_name);
+            const savedState = getCookie('quizState');
             if (savedState) {
                 currentQuestionIndex = savedState.currentQuestionIndex || 0;
                 score = savedState.score || 0;
@@ -161,44 +230,42 @@
             addEventListeners();
         });
 
-       function setupQuiz() {
-    document.title = main_title;
-    mainTitleEl.textContent = main_title;
-    questionsWrapperEl.innerHTML = '';
-    questionJumpEl.innerHTML = '';
+        function setupQuiz() {
+            document.title = main_title;
+            mainTitleEl.textContent = main_title;
+            questionsWrapperEl.innerHTML = '';
+            questionJumpEl.innerHTML = '';
 
-    questions.forEach((q, index) => {
-        renderQuestion(q, index);
-        const option = document.createElement('option');
-        option.value = index;
-        option.textContent = `Question ${index + 1}`;
-        questionJumpEl.appendChild(option);
-    });
-
-    // After rendering, apply the loaded state to the UI
-    questions.forEach((q, index) => {
-        const selections = userSelections[index];
-        if (selections && selections.length > 0) {
-            const qContainer = document.getElementById(`question-${index}`);
-            selections.forEach(letter => {
-                const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
-                if (btn) btn.classList.add('selected');
+            questions.forEach((q, index) => {
+                renderQuestion(q, index);
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `Question ${index + 1}`;
+                questionJumpEl.appendChild(option);
             });
-            if (!answeredCorrectly[index]) {
-                const confirmBtn = qContainer.querySelector('.confirm-btn');
-                // --- THIS IS THE MODIFIED LOGIC FOR PAGE LOAD ---
-                confirmBtn.disabled = selections.length !== q.correctAnswers.length;
-            }
+
+            // After rendering, apply the loaded state to the UI
+            questions.forEach((q, index) => {
+                const selections = userSelections[index];
+                if (selections && selections.length > 0) {
+                    const qContainer = document.getElementById(`question-${index}`);
+                    selections.forEach(letter => {
+                        const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
+                        if (btn) btn.classList.add('selected');
+                    });
+                    if (!answeredCorrectly[index]) {
+                        qContainer.querySelector('.confirm-btn').disabled = userSelections[index].length !== q.correctAnswers.length;
+                    }
+                }
+                if (answeredCorrectly[index]) {
+                    applyConfirmedState(index);
+                }
+            });
+            
+            updateScoreboard();
+            timerEl.textContent = formatTime(totalSeconds);
+            showQuestion(currentQuestionIndex, true); // Show the last question without saving state again
         }
-        if (answeredCorrectly[index]) {
-            applyConfirmedState(index);
-        }
-    });
-    
-    updateScoreboard();
-    timerEl.textContent = formatTime(totalSeconds);
-    showQuestion(currentQuestionIndex, true); // Show the last question without saving state again
-}
         
         function addEventListeners() {
             nextBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
@@ -219,7 +286,7 @@
             const choiceText = `(Choose ${question.correctAnswers.length})`;
 
            questionContainer.innerHTML = `
-                <p class="text-gray-800 text-xl mb-4">${question.scenario}<br></p>
+                <p class="text-gray-800 text-xl mb-4">${question.scenario}</p>
                 <p class="text-lg font-medium mb-4">${question.questionText} <span class="text-sm font-normal text-gray-500">${question.isMultiChoice ? choiceText : '(Choose one)'}</span></p>
                 <div class="options-grid grid grid-cols-1 gap-3 mb-4">
                     ${question.options.map(opt => `
@@ -227,9 +294,12 @@
                             <span class="font-bold mr-2">${opt.letter}.</span> ${opt.text}
                         </button>
                     `).join('')}
-                </div><div class="flex  justify-end">
-                <button class="confirm-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Confirm</button>
-               </div> <div class="explanation-box mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <button class="explanation-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Explanation</button>
+                    <button class="confirm-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Confirm</button>
+                </div>
+                <div class="explanation-box mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <p class="explanation-text whitespace-pre-wrap  text-base"></p>
                     <p class="wrong-explanation-text whitespace-pre-wrap  text-base mt-2"></p>
                 </div>
@@ -240,6 +310,7 @@
             const optionButtons = questionContainer.querySelectorAll('.option-btn');
             optionButtons.forEach(btn => btn.addEventListener('click', handleOptionSelect));
             questionContainer.querySelector('.confirm-btn').addEventListener('click', handleConfirm);
+            questionContainer.querySelector('.explanation-btn').addEventListener('click', handleExplanationClick);
         }
 
         function applyConfirmedState(index) {
@@ -247,9 +318,11 @@
             const selections = userSelections[index];
             const qContainer = document.getElementById(`question-${index}`);
             const confirmBtn = qContainer.querySelector('.confirm-btn');
+            const explanationBtn = qContainer.querySelector('.explanation-btn');
             const optionButtons = qContainer.querySelectorAll('.option-btn');
 
             confirmBtn.disabled = true;
+            explanationBtn.disabled = false;
             optionButtons.forEach(btn => btn.disabled = true);
 
             optionButtons.forEach(btn => {
@@ -264,41 +337,44 @@
             const explanationBox = qContainer.querySelector('.explanation-box');
             explanationBox.querySelector('.explanation-text').textContent = question.explanation;
             explanationBox.querySelector('.wrong-explanation-text').textContent = question.wrongExplanation;
-            explanationBox.classList.add('visible');
         }
 
         // --- LOGIC & EVENT HANDLERS ---
-     function handleOptionSelect(event) {
-    const selectedBtn = event.currentTarget;
-    const index = parseInt(selectedBtn.dataset.questionIndex);
-    const letter = selectedBtn.dataset.letter;
-    const question = questions[index];
-    const parent = selectedBtn.closest('.options-grid');
+        function handleOptionSelect(event) {
+            const selectedBtn = event.currentTarget;
+            const index = parseInt(selectedBtn.dataset.questionIndex);
+            const letter = selectedBtn.dataset.letter;
+            const question = questions[index];
+            const parent = selectedBtn.closest('.options-grid');
 
-    if (question.isMultiChoice) {
-        const currentSelections = userSelections[index];
-        // Note: For multi-choice, we no longer need to enforce a max limit here
-        // as the confirm button logic will handle it.
-        if (currentSelections.includes(letter)) {
-            userSelections[index] = currentSelections.filter(l => l !== letter);
-            selectedBtn.classList.remove('selected');
-        } else {
-            userSelections[index].push(letter);
-            selectedBtn.classList.add('selected');
+            if (question.isMultiChoice) {
+                const currentSelections = userSelections[index];
+                const maxSelections = question.correctAnswers.length;
+
+                if (currentSelections.includes(letter)) {
+                    userSelections[index] = currentSelections.filter(l => l !== letter);
+                    selectedBtn.classList.remove('selected');
+                } else {
+                    if (currentSelections.length >= maxSelections) {
+                        const oldestSelection = userSelections[index].shift();
+                        const oldestBtn = parent.querySelector(`.option-btn[data-letter="${oldestSelection}"]`);
+                        if (oldestBtn) {
+                            oldestBtn.classList.remove('selected');
+                        }
+                    }
+                    userSelections[index].push(letter);
+                    selectedBtn.classList.add('selected');
+                }
+            } else {
+                userSelections[index] = [letter];
+                parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+                selectedBtn.classList.add('selected');
+            }
+            
+            const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
+            confirmBtn.disabled = userSelections[index].length !== question.correctAnswers.length;
+            saveState();
         }
-    } else {
-        userSelections[index] = [letter];
-        parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-        selectedBtn.classList.add('selected');
-    }
-    
-    const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
-    // --- THIS IS THE MODIFIED LINE ---
-    // Enable the button only if the selection count equals the correct answer count.
-    confirmBtn.disabled = userSelections[index].length !== question.correctAnswers.length;
-    
-    saveState();
-}
 
         function handleConfirm(event) {
             const confirmBtn = event.currentTarget;
@@ -312,14 +388,19 @@
             
             if (isCorrect && !answeredCorrectly[index]) {
                 score++;
-                answeredCorrectly[index] = true;
                 updateScoreboard();
-            } else if (!isCorrect) {
-                 answeredCorrectly[index] = true; // Mark as answered even if wrong
             }
             
+            answeredCorrectly[index] = true;
             applyConfirmedState(index);
             saveState();
+        }
+
+        function handleExplanationClick(event) {
+            const btn = event.currentTarget;
+            const index = parseInt(btn.dataset.questionIndex);
+            const explanationBox = document.querySelector(`#question-${index} .explanation-box`);
+            explanationBox.classList.toggle('visible');
         }
 
         function showQuestion(index, isInitialLoad = false) {
@@ -347,7 +428,7 @@
         }
         
         function resetQuiz() {
-            deleteCookie(cookie_name); // Clear the saved state
+            deleteCookie('quizState'); // Clear the saved state
             
             // Reset state variables to their initial values
             currentQuestionIndex = 0;
@@ -363,13 +444,13 @@
                     btn.classList.remove('selected', 'correct', 'incorrect');
                 });
                 qContainer.querySelector('.confirm-btn').disabled = true;
+                qContainer.querySelector('.explanation-btn').disabled = true;
                 qContainer.querySelector('.explanation-box').classList.remove('visible');
             });
             
             updateScoreboard();
             showQuestion(0);
             resetTimer();
-            location.reload();
         }
         
         // --- TIMER FUNCTIONS ---
