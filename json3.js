@@ -1,4 +1,4 @@
-const cookie_name = "json2";
+const cookie_name = "json3";
 const main_title = "AWS SysOps Practice Quizzes - Hard";
  // --- DATA SOURCE ---
 const questions = [
