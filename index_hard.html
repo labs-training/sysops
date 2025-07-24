@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,19 +42,14 @@
 
     <div id="quiz-container" class="container mx-auto p-4 md:p-8" style="max-width: 1500px;">
         <!-- Header: Title, Score, Timer, Reset -->
-        <header class="bg-white p-4 rounded-lg shadow-md mb-6 ">
+        <header class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-0 z-10">
             <div class="flex flex-wrap justify-between items-center gap-4">
-                <h1 id="main-title" class="text-xl md:text-xl font-bold text-gray-700"></h1>
-                <div class="flex items-center gap-4">
-                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-1 py-2 rounded-lg">Score: 0 / 0</div>
-                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded-lg transition-colors">Reset Quiz</button>
+                <h1 id="main-title" class="text-2xl md:text-3xl font-bold text-gray-700"></h1>
+                <div class="flex items-center gap-3">
+                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">Score: 0 / 0</div>
+                    <div id="timer" class="text-sm font-mono bg-gray-200 px-3 py-1 rounded-lg">00:00:00</div>
+                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg transition-colors text-sm">Reset Quiz</button>
                 </div>
-            </div>
-             <div class="flex items-center gap-2 mt-4">
-                <div id="timer" class="text-sm font-mono bg-gray-200 px-3 py-1 rounded">00:00:00</div>
-                <button id="start-timer-btn" class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded">Start</button>
-                <button id="stop-timer-btn" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded">Stop</button>
-                <button id="reset-timer-btn" class="text-xs bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded">Reset</button>
             </div>
         </header>
 
@@ -64,7 +59,7 @@
         </main>
 
         <!-- Navigation -->
-        <nav id="navigation-controls" class="mt-6 flex justify-between items-center bg-white p-3 rounded-lg shadow-md ">
+        <nav id="navigation-controls" class="mt-6 flex justify-between items-center bg-white p-3 rounded-lg shadow-md sticky bottom-0 z-10">
             <button id="prev-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">Previous</button>
             <div class="flex items-center gap-2">
                 <label for="question-jump" class="text-sm font-medium">Jump to:</label>
@@ -73,18 +68,23 @@
             <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed">Next</button>
         </nav>
     </div>
-  <script src="json2.js"></script>
-    <script>
+    
+    <!-- External script with quiz data -->
+    <script src="json2.js"></script>
 
+    <!-- Main application logic -->
+    <script>
+       
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
         let score = 0;
-        let userSelections = Array(questions.length).fill(null).map(() => []);
-        let answeredCorrectly = Array(questions.length).fill(false);
+        let userSelections;
+        let answeredCorrectly;
         
         // Timer state
         let timerInterval;
         let totalSeconds = 0;
+        let inactivityTimer;
 
         // --- DOM ELEMENTS ---
         const mainTitleEl = document.getElementById('main-title');
@@ -95,9 +95,6 @@
         const questionJumpEl = document.getElementById('question-jump');
         const resetQuizBtn = document.getElementById('reset-quiz-btn');
         const timerEl = document.getElementById('timer');
-        const startTimerBtn = document.getElementById('start-timer-btn');
-        const stopTimerBtn = document.getElementById('stop-timer-btn');
-        const resetTimerBtn = document.getElementById('reset-timer-btn');
 
         // --- COOKIE HELPERS ---
         function setCookie(name, value, days) {
@@ -140,25 +137,34 @@
                 answeredCorrectly,
                 totalSeconds
             };
-            setCookie(cookie_name, state, 7); // Save state for 7 days
+            setCookie('quizState', state, 7); // Save state for 7 days
         }
 
         function loadState() {
-            const savedState = getCookie(cookie_name);
+            const savedState = getCookie('quizState');
             if (savedState) {
                 currentQuestionIndex = savedState.currentQuestionIndex || 0;
                 score = savedState.score || 0;
                 userSelections = savedState.userSelections || Array(questions.length).fill(null).map(() => []);
                 answeredCorrectly = savedState.answeredCorrectly || Array(questions.length).fill(false);
                 totalSeconds = savedState.totalSeconds || 0;
-            }
+                return true;
+            } 
+            return false;
         }
 
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
-            loadState(); // Load state from cookie before setting up the quiz
+            // Initialize arrays that depend on the 'questions' variable from test.js
+            userSelections = Array(questions.length).fill(null).map(() => []);
+            answeredCorrectly = Array(questions.length).fill(false);
+
+            const stateLoaded = loadState(); // Load state from cookie before setting up the quiz
             setupQuiz();
             addEventListeners();
+            if (!stateLoaded) {
+                handleUserInteraction();
+            }
         });
 
         function setupQuiz() {
@@ -182,10 +188,12 @@
                     const qContainer = document.getElementById(`question-${index}`);
                     selections.forEach(letter => {
                         const btn = qContainer.querySelector(`.option-btn[data-letter="${letter}"]`);
-                        if (btn) btn.classList.add('selected');
+                        if (btn) {
+                            btn.classList.add('selected', 'font-bold');
+                        }
                     });
                     if (!answeredCorrectly[index]) {
-                        qContainer.querySelector('.confirm-btn').disabled = false;
+                        qContainer.querySelector('.confirm-btn').disabled = userSelections[index].length !== q.correctAnswers.length;
                     }
                 }
                 if (answeredCorrectly[index]) {
@@ -199,13 +207,17 @@
         }
         
         function addEventListeners() {
-            nextBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
-            prevBtn.addEventListener('click', () => showQuestion(currentQuestionIndex - 1));
-            questionJumpEl.addEventListener('change', (e) => showQuestion(parseInt(e.target.value)));
+            // Listener for all interactions inside the main container for delegation
+            document.getElementById('quiz-container').addEventListener('click', (e) => {
+                handleUserInteraction();
+                dispatchInteraction(e);
+            });
+            document.getElementById('quiz-container').addEventListener('change', (e) => {
+                handleUserInteraction();
+                dispatchInteraction(e);
+            });
+
             resetQuizBtn.addEventListener('click', resetQuiz);
-            startTimerBtn.addEventListener('click', startTimer);
-            stopTimerBtn.addEventListener('click', stopTimer);
-            resetTimerBtn.addEventListener('click', resetTimer);
         }
 
         // --- RENDERING ---
@@ -217,7 +229,7 @@
             const choiceText = `(Choose ${question.correctAnswers.length})`;
 
            questionContainer.innerHTML = `
-                <p class="text-gray-800 text-xl mb-4">${question.scenario}<br></p>
+                <p class="text-gray-800 text-xl mb-4">${question.scenario}</p>
                 <p class="text-lg font-medium mb-4">${question.questionText} <span class="text-sm font-normal text-gray-500">${question.isMultiChoice ? choiceText : '(Choose one)'}</span></p>
                 <div class="options-grid grid grid-cols-1 gap-3 mb-4">
                     ${question.options.map(opt => `
@@ -225,19 +237,18 @@
                             <span class="font-bold mr-2">${opt.letter}.</span> ${opt.text}
                         </button>
                     `).join('')}
-                </div><div class="flex  justify-end">
-                <button class="confirm-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Confirm</button>
-               </div> <div class="explanation-box mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                </div>
+                <div class="mt-4 flex justify-between items-center">
+                    <button class="explanation-btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Explanation</button>
+                    <button class="confirm-btn bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed" data-question-index="${index}" disabled>Confirm</button>
+                </div>
+                <div class="explanation-box mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <p class="explanation-text whitespace-pre-wrap  text-base"></p>
                     <p class="wrong-explanation-text whitespace-pre-wrap  text-base mt-2"></p>
                 </div>
             `;
 
             questionsWrapperEl.appendChild(questionContainer);
-
-            const optionButtons = questionContainer.querySelectorAll('.option-btn');
-            optionButtons.forEach(btn => btn.addEventListener('click', handleOptionSelect));
-            questionContainer.querySelector('.confirm-btn').addEventListener('click', handleConfirm);
         }
 
         function applyConfirmedState(index) {
@@ -245,9 +256,11 @@
             const selections = userSelections[index];
             const qContainer = document.getElementById(`question-${index}`);
             const confirmBtn = qContainer.querySelector('.confirm-btn');
+            const explanationBtn = qContainer.querySelector('.explanation-btn');
             const optionButtons = qContainer.querySelectorAll('.option-btn');
 
             confirmBtn.disabled = true;
+            explanationBtn.disabled = false;
             optionButtons.forEach(btn => btn.disabled = true);
 
             optionButtons.forEach(btn => {
@@ -262,12 +275,10 @@
             const explanationBox = qContainer.querySelector('.explanation-box');
             explanationBox.querySelector('.explanation-text').textContent = question.explanation;
             explanationBox.querySelector('.wrong-explanation-text').textContent = question.wrongExplanation;
-            explanationBox.classList.add('visible');
         }
 
-        // --- LOGIC & EVENT HANDLERS ---
-        function handleOptionSelect(event) {
-            const selectedBtn = event.currentTarget;
+        // --- LOGIC & EVENT HANDLERS (REFACTORED) ---
+        function handleOptionSelect(selectedBtn) {
             const index = parseInt(selectedBtn.dataset.questionIndex);
             const letter = selectedBtn.dataset.letter;
             const question = questions[index];
@@ -279,31 +290,32 @@
 
                 if (currentSelections.includes(letter)) {
                     userSelections[index] = currentSelections.filter(l => l !== letter);
-                    selectedBtn.classList.remove('selected');
+                    selectedBtn.classList.remove('selected', 'font-bold');
                 } else {
                     if (currentSelections.length >= maxSelections) {
                         const oldestSelection = userSelections[index].shift();
                         const oldestBtn = parent.querySelector(`.option-btn[data-letter="${oldestSelection}"]`);
                         if (oldestBtn) {
-                            oldestBtn.classList.remove('selected');
+                            oldestBtn.classList.remove('selected', 'font-bold');
                         }
                     }
                     userSelections[index].push(letter);
-                    selectedBtn.classList.add('selected');
+                    selectedBtn.classList.add('selected', 'font-bold');
                 }
             } else {
+                parent.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.classList.remove('selected', 'font-bold');
+                });
                 userSelections[index] = [letter];
-                parent.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
-                selectedBtn.classList.add('selected');
+                selectedBtn.classList.add('selected', 'font-bold');
             }
             
             const confirmBtn = document.querySelector(`#question-${index} .confirm-btn`);
-            confirmBtn.disabled = userSelections[index].length === 0;
+            confirmBtn.disabled = userSelections[index].length !== question.correctAnswers.length;
             saveState();
         }
 
-        function handleConfirm(event) {
-            const confirmBtn = event.currentTarget;
+        function handleConfirm(confirmBtn) {
             const index = parseInt(confirmBtn.dataset.questionIndex);
             const question = questions[index];
             const selections = userSelections[index];
@@ -314,14 +326,18 @@
             
             if (isCorrect && !answeredCorrectly[index]) {
                 score++;
-                answeredCorrectly[index] = true;
                 updateScoreboard();
-            } else if (!isCorrect) {
-                 answeredCorrectly[index] = true; // Mark as answered even if wrong
             }
             
+            answeredCorrectly[index] = true;
             applyConfirmedState(index);
             saveState();
+        }
+
+        function handleExplanationClick(btn) {
+            const index = parseInt(btn.dataset.questionIndex);
+            const explanationBox = document.querySelector(`#question-${index} .explanation-box`);
+            explanationBox.classList.toggle('visible');
         }
 
         function showQuestion(index, isInitialLoad = false) {
@@ -349,44 +365,51 @@
         }
         
         function resetQuiz() {
-            deleteCookie(cookie_name); // Clear the saved state
+            deleteCookie('quizState'); 
             
-            // Reset state variables to their initial values
             currentQuestionIndex = 0;
             score = 0;
             userSelections = Array(questions.length).fill(null).map(() => []);
             answeredCorrectly.fill(false);
             
-            // Reset UI
             questions.forEach((q, index) => {
                 const qContainer = document.getElementById(`question-${index}`);
                 qContainer.querySelectorAll('.option-btn').forEach(btn => {
                     btn.disabled = false;
-                    btn.classList.remove('selected', 'correct', 'incorrect');
+                    btn.classList.remove('selected', 'correct', 'incorrect', 'font-bold');
                 });
                 qContainer.querySelector('.confirm-btn').disabled = true;
+                qContainer.querySelector('.explanation-btn').disabled = true;
                 qContainer.querySelector('.explanation-box').classList.remove('visible');
             });
             
             updateScoreboard();
             showQuestion(0);
             resetTimer();
+            handleUserInteraction();
             location.reload();
         }
         
-        // --- TIMER FUNCTIONS ---
+        // --- TIMER & INACTIVITY FUNCTIONS ---
+        function handleUserInteraction() {
+            clearTimeout(inactivityTimer);
+            startTimer();
+            inactivityTimer = setTimeout(stopTimer, 180000); // 3 minutes
+        }
+        
         function startTimer() {
             if (timerInterval) return;
             timerInterval = setInterval(() => {
                 totalSeconds++;
                 timerEl.textContent = formatTime(totalSeconds);
-                saveState(); // Save time progress
+                saveState();
             }, 1000);
         }
 
         function stopTimer() {
             clearInterval(timerInterval);
             timerInterval = null;
+            clearTimeout(inactivityTimer);
         }
 
         function resetTimer() {
@@ -401,6 +424,37 @@
             const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
             return `${h}:${m}:${s}`;
+        }
+        
+        // --- EVENT DISPATCHER ---
+        function dispatchInteraction(event) {
+            const target = event.target;
+            
+            const optionBtn = target.closest('.option-btn');
+            if (optionBtn) {
+                handleOptionSelect(optionBtn);
+                return;
+            }
+
+            const confirmBtn = target.closest('.confirm-btn');
+            if (confirmBtn) {
+                handleConfirm(confirmBtn);
+                return;
+            }
+
+            const explanationBtn = target.closest('.explanation-btn');
+            if (explanationBtn) {
+                handleExplanationClick(explanationBtn);
+                return;
+            }
+
+            if (target.id === 'prev-btn') {
+                 showQuestion(currentQuestionIndex - 1);
+            } else if (target.id === 'next-btn') {
+                 showQuestion(currentQuestionIndex + 1);
+            } else if (target.id === 'question-jump') {
+                showQuestion(parseInt(target.value));
+            }
         }
 
     </script>
