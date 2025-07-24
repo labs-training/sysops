@@ -45,16 +45,11 @@
         <header class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-0 z-10">
             <div class="flex flex-wrap justify-between items-center gap-4">
                 <h1 id="main-title" class="text-2xl md:text-3xl font-bold text-gray-700"></h1>
-                <div class="flex items-center gap-4">
-                    <div id="scoreboard" class="text-lg font-semibold bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">Score: 0 / 0</div>
-                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Reset Quiz</button>
+                <div class="flex items-center gap-3">
+                    <div id="scoreboard" class="text-sm font-semibold bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">Score: 0 / 0</div>
+                    <div id="timer" class="text-sm font-mono bg-gray-200 px-3 py-1 rounded-lg">00:00:00</div>
+                    <button id="reset-quiz-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg transition-colors text-sm">Reset Quiz</button>
                 </div>
-            </div>
-             <div class="flex items-center gap-2 mt-4">
-                <div id="timer" class="text-sm font-mono bg-gray-200 px-3 py-1 rounded">00:00:00</div>
-                <button id="start-timer-btn" class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-2 rounded">Start</button>
-                <button id="stop-timer-btn" class="text-xs bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-2 rounded">Stop</button>
-                <button id="reset-timer-btn" class="text-xs bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-2 rounded">Reset</button>
             </div>
         </header>
 
@@ -75,13 +70,14 @@
     </div>
     
     <!-- External script with quiz data -->
-  <script src="sysops.json.js"></script> 
+    <script src="sysops.json.js"></script>
 
     <!-- Main application logic -->
     <script>
         // --- STATE MANAGEMENT ---
         let currentQuestionIndex = 0;
         let score = 0;
+        // The 'questions' variable is expected to be loaded from the external script.
         let userSelections = Array(questions.length).fill(null).map(() => []);
         let answeredCorrectly = Array(questions.length).fill(false);
         
@@ -99,9 +95,6 @@
         const questionJumpEl = document.getElementById('question-jump');
         const resetQuizBtn = document.getElementById('reset-quiz-btn');
         const timerEl = document.getElementById('timer');
-        const startTimerBtn = document.getElementById('start-timer-btn');
-        const stopTimerBtn = document.getElementById('stop-timer-btn');
-        const resetTimerBtn = document.getElementById('reset-timer-btn');
 
         // --- COOKIE HELPERS ---
         function setCookie(name, value, days) {
@@ -218,19 +211,6 @@
                 dispatchInteraction(e);
             });
 
-            // Specific listeners for manual timer controls that override inactivity
-            startTimerBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent container listener from firing
-                handleUserInteraction();
-            });
-            stopTimerBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                stopTimer();
-            });
-            resetTimerBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                resetTimer();
-            });
             resetQuizBtn.addEventListener('click', resetQuiz);
         }
 
